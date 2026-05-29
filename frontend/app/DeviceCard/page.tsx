@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import dynamic from 'next/dynamic'; // Công cụ nạp component động dưới trình duyệt
 import { 
   LayoutDashboard, 
   Cpu, 
@@ -15,22 +14,17 @@ import {
   Radio 
 } from 'lucide-react';
 
-// 1. Nhập linh kiện DeviceCard có sẵn của bạn
+// Import component DeviceCard có sẵn của bạn
 import DeviceCard from '../../src/features/dashboard/DeviceCard';
-
-// 2. Nạp Bản đồ động và tắt cơ chế SSR để tránh lỗi sập trang Next.js
-const MapComponent = dynamic(
-  () => import('../../src/features/dashboard/MapComponent'),
-  { ssr: false }
-);
+import dynamic from 'next/dynamic'; // <-- 1. THÊM DÒNG NÀY
 
 export default function DashboardPage() {
   const router = useRouter();
   
-  // Quản lý trạng thái tab đang chọn (Mặc định ban đầu là 'monitor')
+  // Quản lý tab đang được chọn (Mặc định ban đầu là tab 'monitor')
   const [activeTab, setActiveTab] = useState('monitor');
 
-  // Danh sách các mục trên MenuBar bên trái
+  // Khai báo danh sách các nút bấm trên MenuBar
   const menuItems = [
     { id: 'monitor', label: 'Monitor', icon: LayoutDashboard },
     { id: 'list_devices', label: 'List Devices', icon: Cpu },
@@ -83,9 +77,9 @@ export default function DashboardPage() {
           </nav>
         </div>
 
-        {/* Khối Dưới cùng: Thông tin tài khoản người đăng nhập & Đăng xuất */}
+        {/* Khối Dưới cùng: Thông tin người đăng nhập & Nút Đăng xuất */}
         <div className="border-t border-slate-100 pt-4 flex flex-col gap-3">
-          {/* Hộp hiển thị profile cá nhân */}
+          {/* Box thông tin cá nhân */}
           <div className="flex items-center gap-3 px-2 py-1.5 bg-slate-50 rounded-xl border border-slate-100">
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-slate-600 shadow-inner">
               <User className="w-5 h-5" />
@@ -96,7 +90,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Nút Đăng xuất hệ thống */}
+          {/* Nút Đăng xuất quay về trang chủ */}
           <button 
             onClick={() => router.push('/')}
             className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 rounded-xl transition-all duration-150 active:scale-95"
@@ -108,19 +102,19 @@ export default function DashboardPage() {
       </aside>
 
       {/* =========================================================================
-          2. KHU VỰC HIỂN THỊ NỘI DUNG CHÍNH (CONTENT AREA BÊN PHẢI)
+          2. KHU VỰC HIỂN THỊ NỘI DUNG (CONTENT AREA BÊN PHẢI)
           ========================================================================= */}
       <main className="flex-1 h-full overflow-y-auto p-8 md:p-10 relative">
         
-        {/* TAB 1: MONITOR (Bao gồm hộp thông số IoT và Bản đồ thực tế Leaflet) */}
+        {/* TAB 1: MONITOR (Giám sát dữ liệu IoT thời gian thực) */}
         {activeTab === 'monitor' && (
           <div className="space-y-6 animate-in fade-in duration-200">
             <div>
               <h2 className="text-2xl font-bold text-slate-900">Monitor</h2>
-              <p className="text-sm text-slate-400 mt-1">Theo dõi vị trí hành trình và trạng thái vận hành thiết bị thời gian thực</p>
+              <p className="text-sm text-slate-400 mt-1">Theo dõi trạng thái vận hành của toàn bộ thiết bị phần cứng</p>
             </div>
             
-            {/* Lưới hiển thị 3 hộp thông số nhanh */}
+            {/* Hộp thông số giả lập nhanh */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60 flex items-center gap-4">
                 <div className="p-3 bg-cyan-50 text-cyan-600 rounded-xl"><MapPin className="w-6 h-6" /></div>
@@ -145,14 +139,14 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* KHU VỰC BẢN ĐỒ THẬT 100% */}
-            <div className="w-full h-[480px] bg-white rounded-2xl shadow-sm relative border border-slate-200/40 overflow-hidden z-10">
-              <MapComponent />
+            {/* Khung bản đồ / Đồ thị giả lập */}
+            <div className="w-full h-80 bg-white rounded-2xl border border-slate-200/60 flex items-center justify-center text-slate-400 font-medium text-sm shadow-sm">
+              [ Bản đồ hành trình di chuyển thời gian thực ]
             </div>
           </div>
         )}
 
-        {/* TAB 2: LIST DEVICES (Gọi component hiển thị danh sách thẻ thiết bị của bạn) */}
+        {/* TAB 2: LIST DEVICES (Danh sách thiết bị - Bưng nguyên Component của bạn vào) */}
         {activeTab === 'list_devices' && (
           <div className="space-y-6 animate-in fade-in duration-200">
             <div>
@@ -167,12 +161,12 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* TAB 3: SETTING (Cấu hình ngưỡng kỹ thuật) */}
+        {/* TAB 3: SETTING (Cấu hình ngưỡng cảnh báo va chạm) */}
         {activeTab === 'settings' && (
           <div className="space-y-6 animate-in fade-in duration-200">
             <div>
               <h2 className="text-2xl font-bold text-slate-900">Setting</h2>
-              <p className="text-sm text-slate-400 mt-1">Cấu hình các thông số kỹ thuật cho hệ thống cảnh báo khẩn cấp</p>
+              <p className="text-sm text-slate-400 mt-1">Cấu hình các thông số kỹ thuật cho hệ thống cảnh báo</p>
             </div>
             
             <div className="bg-white p-8 rounded-2xl border border-slate-200/60 max-w-xl shadow-sm space-y-4">
@@ -182,7 +176,7 @@ export default function DashboardPage() {
                 <div className="flex justify-between text-xs text-slate-400 mt-1 font-semibold"><span>Thấp (An toàn)</span><span>Mặc định</span><span>Cao (Rất nhạy)</span></div>
               </div>
               <div className="pt-2">
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">Số điện thoại SOS cứu hộ khẩn cấp</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">Số điện thoại SOS khẩn cấp</label>
                 <input type="text" placeholder="0901234567" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#00b494]" />
               </div>
               <button onClick={() => alert('Đã lưu cấu hình giả lập!')} className="px-5 py-2.5 bg-gradient-to-r from-[#29cca2] to-[#54aafa] text-white font-bold rounded-xl text-xs shadow-sm hover:brightness-105 transition-all">
@@ -197,7 +191,7 @@ export default function DashboardPage() {
           <div className="space-y-6 animate-in fade-in duration-200">
             <div>
               <h2 className="text-2xl font-bold text-slate-900">About Us</h2>
-              <p className="text-sm text-slate-400 mt-1">Thông tin về đồ án nghiên cứu khoa học hệ thống MoniMove</p>
+              <p className="text-sm text-slate-400 mt-1">Thông tin về đồ án nghiên cứu khoa học MoniMove App</p>
             </div>
             
             <div className="bg-white p-8 rounded-2xl border border-slate-200/60 max-w-2xl shadow-sm space-y-4 leading-relaxed">
