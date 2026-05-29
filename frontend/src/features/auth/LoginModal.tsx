@@ -1,7 +1,8 @@
 'use client';
 
-import { X, Mail, Lock } from 'lucide-react';
-import { useRouter } from 'next/navigation'; // <-- Import công cụ điều hướng
+import { useState } from 'react';
+import { X, User, Lock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -11,12 +12,23 @@ interface LoginModalProps {
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const router = useRouter();
 
-  if (!isOpen) return null; // Nếu isOpen = false, component sẽ trả về rỗng
+  // Tạo các trạng thái lưu dữ liệu người dùng gõ
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
 
+  if (!isOpen) return null;
+
+  // Hàm xử lý kiểm tra đăng nhập bằng tay
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    router.push('/dashboard'); // Kích hoạt chuyển hướng sang /dashboard
-    onClose();
+
+    if (username === 'admin' && password === 'admin') {
+      console.log("🎉 Đăng nhập giả lập thành công!");
+      router.push('/DeviceCard'); // Chuyển hướng sang trang danh sách thiết bị
+      onClose(); // Đóng modal lại
+    } else {
+      alert('Tài khoản hoặc mật khẩu admin chưa chính xác rồi bạn ơi!');
+    }
   };
 
   return (
@@ -45,12 +57,14 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         {/* Form nhập liệu */}
         <form onSubmit={handleLoginSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Email</label>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tài khoản</label>
             <div className="relative">
-              <Mail className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
+              <User className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
               <input 
-                type="email" 
-                placeholder="name@example.com" 
+                type="text" 
+                placeholder="Nhập tài khoản admin" 
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#00b494] focus:bg-white focus:ring-2 focus:ring-[#00b494]/20 transition-all text-slate-800"
                 required
               />
@@ -64,6 +78,8 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               <input 
                 type="password" 
                 placeholder="••••••••" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#00b494] focus:bg-white focus:ring-2 focus:ring-[#00b494]/20 transition-all text-slate-800"
                 required
               />
