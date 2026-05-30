@@ -3,10 +3,8 @@
 import { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import LoginModal from '../src/features/auth/LoginModal';
-import DeviceCard from '../src/features/dashboard/DeviceCard';
 
 export default function Home() {
-  // Quản lý trạng thái ẩn/hiện LoginModal
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   return (
@@ -78,7 +76,7 @@ export default function Home() {
         © 2026 MoniMove App. Hỗ trợ giám sát hành trình toàn diện.
       </footer>
 
-      {/* Gọi Component LoginModal */}
+      {/* LoginModal */}
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
 
       {/* BACKGROUND BLUR ORBS */}

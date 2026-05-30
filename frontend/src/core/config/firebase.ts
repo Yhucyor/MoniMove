@@ -1,18 +1,19 @@
 // frontend/src/config/firebase.ts
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth"; // 1. Thêm dòng này để gọi dịch vụ Auth
+import { getAuth } from "firebase/auth";
 
+// ✅ SỬA: Dùng biến môi trường thay vì hardcode API key
 const firebaseConfig = {
-  apiKey: "AIzaSyAQGHnSICLu-1QpOItRIYen0y5AxPbIMtc",
-  authDomain: "monimove-6cd1d.firebaseapp.com",
-  projectId: "monimove-6cd1d",
-  storageBucket: "monimove-6cd1d.firebasestorage.app",
-  messagingSenderId: "924125576856",
-  appId: "1:924125576856:web:853fae140460e139de1aed"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// 2. Xuất biến auth ra ngoài để component LoginModal có thể sử dụng
+// Xuất biến auth ra ngoài để component LoginModal có thể sử dụng
 export const auth = getAuth(app);
