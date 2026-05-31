@@ -35,8 +35,8 @@ export async function getCurrentPosition(deviceId: string): Promise<DevicePositi
     console.error('Error fetching current position:', error);
     // Fallback data
     return {
-      lat: 10.8100,
-      lng: 106.7400,
+      lat: 10.8045,
+      lng: 106.7380,
       timestamp: Date.now(),
       speed: 45,
       heading: 90
@@ -56,11 +56,9 @@ export async function getDeviceRoute(deviceId: string): Promise<DeviceRoute> {
     return {
       deviceId,
       waypoints: [
-        [10.7769, 106.7009],
-        [10.7850, 106.7100],
-        [10.7920, 106.7200],
-        [10.8000, 106.7300],
-        [10.8100, 106.7400],
+        [10.7756, 106.7068],
+        [10.8018, 106.7280],
+        [10.8045, 106.7380],
       ]
     };
   }

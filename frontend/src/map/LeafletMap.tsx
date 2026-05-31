@@ -1,0 +1,778 @@
+'use client';
+
+import dynamic from 'next/dynamic';
+import { useMemo, useState, useEffect } from 'react';
+import { MapPin, Navigation, Layers, Gauge, Shield, Clock, Route, Locate, X, Plus, Minus } from 'lucide-react';
+import { getCurrentPosition, getDeviceRoute, getDeviceInfo } from '../services/api';
+import L from 'leaflet';
+import { useMap } from 'react-leaflet';
+
+// Dynamic imports
+const MapContainer = dynamic(() => import('react-leaflet').then((mod) => mod.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import('react-leaflet').then((mod) => mod.TileLayer), { ssr: false });
+const Marker = dynamic(() => import('react-leaflet').then((mod) => mod.Marker), { ssr: false });
+const Popup = dynamic(() => import('react-leaflet').then((mod) => mod.Popup), { ssr: false });
+const Polyline = dynamic(() => import('react-leaflet').then((mod) => mod.Polyline), { ssr: false });
+const Circle = dynamic(() => import('react-leaflet').then((mod) => mod.Circle), { ssr: false });
+
+import 'leaflet/dist/leaflet.css';
+
+const MAP_STYLES = {
+  standard: {
+    name: 'Standard',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; OpenStreetMap'
+  },
+  satellite: {
+    name: 'Satellite',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: '&copy; Esri'
+  },
+  terrain: {
+    name: 'Terrain',
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; OpenTopoMap'
+  },
+  dark: {
+    name: 'Dark',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; CartoDB'
+  }
+};
+
+interface MapComponentProps {
+  showRoute?: boolean;
+  showSafeZone?: boolean;
+}
+
+export default function MapComponent({ showRoute = true, showSafeZone = true }: MapComponentProps) {
+  const deviceId = 'device-001';
+  const [centerPosition, setCenterPosition] = useState<[number, number]>([10.7769, 106.7009]);
+  const [mapStyle, setMapStyle] = useState<keyof typeof MAP_STYLES>('standard');
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
+  const [isLoadingRoute, setIsLoadingRoute] = useState(false);
+  const [currentPosition, setCurrentPosition] = useState<[number, number]>([10.8045, 106.7380]);
+  const [speed, setSpeed] = useState(45);
+  const [distance, setDistance] = useState(12.5);
+  const [duration, setDuration] = useState('18 phút');
+  const [waypoints, setWaypoints] = useState<[number, number][]>([]);
+  const [showMapStyleMenu, setShowMapStyleMenu] = useState(false);
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
+  const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
+  const [userToDeviceRoute, setUserToDeviceRoute] = useState<[number, number][]>([]);
+  const [isLoadingUserRoute, setIsLoadingUserRoute] = useState(false);
+  const [userRouteDistance, setUserRouteDistance] = useState<number | null>(null);
+  const [userRouteDuration, setUserRouteDuration] = useState<string | null>(null);
+
+  // Auto-detect user position on mount if permission already granted
+  useEffect(() => {
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const userCoords: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+          setUserPosition(userCoords);
+        },
+        (err) => {
+          console.log('Silent auto-location check skipped or denied:', err.message);
+        },
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    }
+  }, []);
+
+  // Fetch route from user to device when positions change
+  useEffect(() => {
+    if (!userPosition || !currentPosition) {
+      setUserToDeviceRoute([]);
+      setUserRouteDistance(null);
+      setUserRouteDuration(null);
+      return;
+    }
+
+    const fetchUserRoute = async () => {
+      setIsLoadingUserRoute(true);
+      try {
+        const start = `${userPosition[1]},${userPosition[0]}`;
+        const end = `${currentPosition[1]},${currentPosition[0]}`;
+        const url = `https://router.project-osrm.org/route/v1/driving/${start};${end}?overview=full&geometries=geojson`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.code === 'Ok' && data.routes && data.routes[0]) {
+          const routeObj = data.routes[0];
+          const coordinates = routeObj.geometry.coordinates.map(
+            (coord: [number, number]) => [coord[1], coord[0]] as [number, number]
+          );
+          setUserToDeviceRoute(coordinates);
+
+          if (routeObj.distance) {
+            setUserRouteDistance(routeObj.distance / 1000);
+          }
+          if (routeObj.duration) {
+            const mins = Math.round(routeObj.duration / 60);
+            if (mins >= 60) {
+              const hrs = Math.floor(mins / 60);
+              const remainingMins = mins % 60;
+              setUserRouteDuration(`${hrs}h ${remainingMins}p`);
+            } else {
+              setUserRouteDuration(`${mins} phút`);
+            }
+          }
+        } else {
+          setUserToDeviceRoute([userPosition, currentPosition]);
+        }
+      } catch (error) {
+        console.error('Error fetching user route:', error);
+        setUserToDeviceRoute([userPosition, currentPosition]);
+      } finally {
+        setIsLoadingUserRoute(false);
+      }
+    };
+
+    fetchUserRoute();
+  }, [userPosition, currentPosition]);
+
+  // Fetch device data on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const deviceInfo = await getDeviceInfo(deviceId);
+        console.log('Device info:', deviceInfo);
+
+        const position = await getCurrentPosition(deviceId);
+        setCurrentPosition([position.lat, position.lng]);
+        setCenterPosition([position.lat, position.lng]);
+        if (position.speed) setSpeed(position.speed);
+
+        const route = await getDeviceRoute(deviceId);
+        setWaypoints(route.waypoints);
+        if (route.distance) setDistance(route.distance / 1000);
+        if (route.duration) setDuration(`${Math.round(route.duration / 60)} phút`);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    fetchData();
+
+    const interval = setInterval(async () => {
+      try {
+        const position = await getCurrentPosition(deviceId);
+        setCurrentPosition([position.lat, position.lng]);
+        if (position.speed) setSpeed(position.speed);
+      } catch (error) {
+        console.error('Error updating position:', error);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [deviceId]);
+
+  // Fetch route from OSRM when waypoints change
+  useEffect(() => {
+    if (waypoints.length === 0) return;
+
+    const fetchRoute = async () => {
+      setIsLoadingRoute(true);
+      try {
+        const coords = waypoints.map(point => `${point[1]},${point[0]}`).join(';');
+        const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.code === 'Ok' && data.routes && data.routes[0]) {
+          const coordinates = data.routes[0].geometry.coordinates.map(
+            (coord: [number, number]) => [coord[1], coord[0]] as [number, number]
+          );
+          setRouteCoordinates(coordinates);
+        } else {
+          setRouteCoordinates(waypoints);
+        }
+      } catch (error) {
+        console.error('Error fetching route:', error);
+        setRouteCoordinates(waypoints);
+      } finally {
+        setIsLoadingRoute(false);
+      }
+    };
+
+    fetchRoute();
+  }, [waypoints]);
+
+  const arrowMarkers = useMemo(() => {
+    if (routeCoordinates.length < 5) return [];
+    const markers: { position: [number, number]; rotation: number }[] = [];
+    const step = Math.max(5, Math.floor(routeCoordinates.length / 8));
+    
+    for (let i = step; i < routeCoordinates.length - 2; i += step) {
+      const p1 = routeCoordinates[i];
+      const p2 = routeCoordinates[i + 2];
+      
+      const dy = p2[0] - p1[0];
+      const dx = p2[1] - p1[1];
+      const rotation = -(Math.atan2(dy, dx) * 180 / Math.PI);
+      
+      markers.push({
+        position: p1,
+        rotation
+      });
+    }
+    return markers;
+  }, [routeCoordinates]);
+
+  const userArrowMarkers = useMemo(() => {
+    if (userToDeviceRoute.length < 2) return [];
+    const markers: { position: [number, number]; rotation: number }[] = [];
+    const step = Math.max(2, Math.floor(userToDeviceRoute.length / 6));
+    
+    for (let i = 0; i < userToDeviceRoute.length - 1; i += step) {
+      const p1 = userToDeviceRoute[i];
+      const p2 = userToDeviceRoute[i + 1];
+      if (!p1 || !p2) continue;
+      
+      const dy = p2[0] - p1[0];
+      const dx = p2[1] - p1[1];
+      const rotation = -(Math.atan2(dy, dx) * 180 / Math.PI);
+      
+      markers.push({
+        position: p1,
+        rotation
+      });
+    }
+    return markers;
+  }, [userToDeviceRoute]);
+
+  const customIcon = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return L.divIcon({
+        className: 'custom-device-icon',
+        html: `
+          <div style="
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #00b494 0%, #12a1c0 100%);
+            border: 4px solid white;
+            border-radius: 50%;
+            box-shadow: 0 6px 20px rgba(0, 180, 148, 0.5), 0 0 0 8px rgba(0, 180, 148, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+            position: relative;
+          ">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 4a3 3 0 100 6 3 3 0 000-6z"/>
+            </svg>
+          </div>
+          <style>
+            @keyframes pulse {
+              0%, 100% { transform: scale(1); box-shadow: 0 6px 20px rgba(0, 180, 148, 0.5), 0 0 0 8px rgba(0, 180, 148, 0.1); }
+              50% { transform: scale(1.05); box-shadow: 0 8px 25px rgba(0, 180, 148, 0.6), 0 0 0 12px rgba(0, 180, 148, 0.15); }
+            }
+          </style>
+        `,
+        iconSize: [48, 48],
+        iconAnchor: [24, 24],
+      });
+    }
+    return null;
+  }, []);
+
+  const userIcon = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return L.divIcon({
+        className: 'user-location-icon',
+        html: `
+          <div style="position: relative; width: 24px; height: 24px;">
+            <div style="position: absolute; top: 4px; left: 4px; width: 16px; height: 16px; background-color: #3b82f6; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(59, 130, 246, 0.8); z-index: 10;"></div>
+            <div style="position: absolute; width: 24px; height: 24px; background-color: #3b82f6; opacity: 0.3; border-radius: 50%; animation: userPulse 2s infinite; z-index: 5;"></div>
+          </div>
+          <style>
+            @keyframes userPulse {
+              0% { transform: scale(0.6); opacity: 0.8; }
+              100% { transform: scale(1.6); opacity: 0; }
+            }
+          </style>
+        `,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+    }
+    return null;
+  }, []);
+
+  if (!customIcon) {
+    return (
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600 font-semibold text-lg">Đang tải bản đồ...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="absolute inset-0">
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes routeFlow {
+          to {
+            stroke-dashoffset: -27;
+          }
+        }
+        .route-flow-line {
+          animation: routeFlow 1.5s linear infinite;
+        }
+        .user-route-flow-line {
+          animation: routeFlow 1.2s linear infinite;
+        }
+      ` }} />
+      <MapContainer 
+        center={centerPosition} 
+        zoom={13} 
+        style={{ height: '100%', width: '100%' }}
+        scrollWheelZoom={true}
+        zoomControl={false}
+      >
+        <MapInstanceGrabber onChange={setMapInstance} />
+        <TileLayer attribution={MAP_STYLES[mapStyle].attribution} url={MAP_STYLES[mapStyle].url} />
+        
+        {showSafeZone && (
+          <Circle
+            center={currentPosition}
+            radius={500}
+            pathOptions={{ color: '#00b494', fillColor: '#00b494', fillOpacity: 0.1, weight: 2, dashArray: '5, 10' }}
+          />
+        )}
+        
+        {showRoute && (
+          userToDeviceRoute.length > 0 ? (
+            <>
+              {/* Route outline outer glowing path */}
+              <Polyline 
+                positions={userToDeviceRoute} 
+                pathOptions={{ 
+                  color: '#047857', 
+                  weight: 8, 
+                  opacity: 0.4,
+                  lineJoin: 'round',
+                  lineCap: 'round'
+                }} 
+              />
+              {/* Core green path */}
+              <Polyline 
+                positions={userToDeviceRoute} 
+                pathOptions={{ 
+                  color: '#10b981', 
+                  weight: 6, 
+                  opacity: 0.8,
+                  lineJoin: 'round',
+                  lineCap: 'round'
+                }} 
+              />
+              {/* Flowing dashed path */}
+              <Polyline 
+                positions={userToDeviceRoute} 
+                pathOptions={{ 
+                  className: 'user-route-flow-line',
+                  color: '#34d399', 
+                  weight: 3, 
+                  opacity: 0.9,
+                  dashArray: '12, 15', 
+                  lineJoin: 'round',
+                  lineCap: 'round'
+                }} 
+              />
+              
+              {userArrowMarkers.map((arrow, idx) => {
+                if (typeof window === 'undefined') return null;
+                const icon = L.divIcon({
+                  className: 'user-route-arrow-marker',
+                  html: `<div style="transform: rotate(${arrow.rotation}deg); width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="18 8 22 12 18 16"></polyline>
+                      <line x1="2" y1="12" x2="22" y2="12"></line>
+                    </svg>
+                  </div>`,
+                  iconSize: [20, 20],
+                  iconAnchor: [10, 10]
+                });
+                return (
+                  <Marker 
+                    key={`user-arrow-${idx}`} 
+                    position={arrow.position} 
+                    icon={icon} 
+                    interactive={false}
+                  />
+                );
+              })}
+            </>
+          ) : routeCoordinates.length > 0 ? (
+            <>
+              <Polyline 
+                positions={routeCoordinates} 
+                pathOptions={{ 
+                  color: '#1e40af', 
+                  weight: 8, 
+                  opacity: 0.4,
+                  lineJoin: 'round',
+                  lineCap: 'round'
+                }} 
+              />
+              <Polyline 
+                positions={routeCoordinates} 
+                pathOptions={{ 
+                  color: '#2563eb', 
+                  weight: 6, 
+                  opacity: 0.8,
+                  lineJoin: 'round',
+                  lineCap: 'round'
+                }} 
+              />
+              <Polyline 
+                positions={routeCoordinates} 
+                pathOptions={{ 
+                  className: 'route-flow-line',
+                  color: '#22d3ee', // Bright glowing cyan
+                  weight: 3, 
+                  opacity: 0.9,
+                  dashArray: '12, 15', // Crawling dashes
+                  lineJoin: 'round',
+                  lineCap: 'round'
+                }} 
+              />
+              
+              {arrowMarkers.map((arrow, idx) => {
+                if (typeof window === 'undefined') return null;
+                const icon = L.divIcon({
+                  className: 'route-arrow-marker',
+                  html: `<div style="transform: rotate(${arrow.rotation}deg); width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="18 8 22 12 18 16"></polyline>
+                      <line x1="2" y1="12" x2="22" y2="12"></line>
+                    </svg>
+                  </div>`,
+                  iconSize: [20, 20],
+                  iconAnchor: [10, 10]
+                });
+                return (
+                  <Marker 
+                    key={`arrow-${idx}`} 
+                    position={arrow.position} 
+                    icon={icon} 
+                    interactive={false}
+                  />
+                );
+              })}
+
+              {waypoints.slice(0, -1).map((point, index) => (
+                <Circle 
+                  key={index} 
+                  center={point} 
+                  radius={80} 
+                  pathOptions={{ 
+                    color: index === 0 ? '#10b981' : '#6366f1', 
+                    fillColor: index === 0 ? '#10b981' : '#6366f1', 
+                    fillOpacity: 0.3, 
+                    weight: 3 
+                  }} 
+                />
+              ))}
+            </>
+          ) : null
+        )}
+        
+        <Marker position={currentPosition} icon={customIcon}>
+          <Popup>
+            <div className="text-sm font-sans p-2 min-w-[220px]">
+              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-200">
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <p className="font-bold text-[#00b494] text-base">MoniMove - 01</p>
+              </div>
+              <div className="space-y-2 text-xs text-slate-600">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-cyan-500" />
+                  <span className="font-mono">{currentPosition[0].toFixed(4)}°N, {currentPosition[1].toFixed(4)}°E</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Gauge className="w-4 h-4 text-blue-500" />
+                  <span>Tốc độ: <strong>{speed} km/h</strong></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Route className="w-4 h-4 text-purple-500" />
+                  <span>Quãng đường: <strong>{distance} km</strong></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-orange-500" />
+                  <span>Thời gian: <strong>{duration}</strong></span>
+                </div>
+              </div>
+              <div className="mt-3 pt-2 border-t border-slate-200">
+                <p className="text-green-600 font-semibold text-xs flex items-center gap-1">
+                  <Shield className="w-3 h-3" />
+                  Đang kết nối - An toàn
+                </p>
+              </div>
+            </div>
+          </Popup>
+        </Marker>
+
+        {userPosition && userIcon && (
+          <Marker position={userPosition} icon={userIcon}>
+            <Popup>
+              <div className="text-xs font-sans p-1">
+                <p className="font-bold text-blue-600 mb-0.5">Vị trí của bạn</p>
+                <p className="text-[10px] text-slate-500 font-mono">{userPosition[0].toFixed(5)}°N, {userPosition[1].toFixed(5)}°E</p>
+              </div>
+            </Popup>
+          </Marker>
+        )}
+      </MapContainer>
+
+      {(isLoadingRoute || isLoadingUserRoute) && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[2000] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-slate-700 font-semibold">Đang tính toán đường đi...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Map Style Toggle Selector */}
+      <div 
+        className="absolute top-4 right-4 z-[1000] w-10 h-10"
+        onMouseEnter={() => setShowMapStyleMenu(true)}
+        onMouseLeave={() => setShowMapStyleMenu(false)}
+      >
+        <button
+          onClick={() => setShowMapStyleMenu(!showMapStyleMenu)}
+          className={`absolute top-0 right-0 w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 border ${
+            showMapStyleMenu
+              ? 'opacity-0 scale-75 rotate-90 pointer-events-none'
+              : 'opacity-100 scale-100 rotate-0 pointer-events-auto bg-white/95 backdrop-blur-md text-slate-700 border-slate-200/80 hover:bg-slate-50'
+          }`}
+          title="Chọn kiểu bản đồ"
+        >
+          <Layers className="w-4 h-4" />
+        </button>
+
+        <div className={`absolute top-0 right-0 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-slate-200/40 p-1.5 w-28 transition-all duration-300 ease-out origin-top-right ${
+          showMapStyleMenu 
+            ? 'opacity-100 scale-100 pointer-events-auto visible' 
+            : 'opacity-0 scale-90 pointer-events-none invisible'
+        }`}>
+          <div className="px-2 py-1 border-b border-slate-100 mb-1">
+            <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400">Kiểu bản đồ</span>
+          </div>
+          <div className="space-y-0.5">
+            {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((style) => (
+              <button
+                key={style}
+                onClick={() => {
+                  setMapStyle(style);
+                  setShowMapStyleMenu(false);
+                }}
+                className={`w-full text-left px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-all duration-200 ${
+                  mapStyle === style
+                    ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                }`}
+              >
+                {MAP_STYLES[style].name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+
+
+      {/* Floating Map Controls (Locate & Zoom) */}
+      <div className="absolute bottom-6 right-4 z-[1000] flex flex-col gap-1.5">
+        {/* Locate Button */}
+        <button
+          onClick={() => {
+            const handleSuccess = (pos: GeolocationPosition) => {
+              const userCoords: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+              setUserPosition(userCoords);
+              if (mapInstance) {
+                mapInstance.setView(userCoords, 16, { animate: true });
+              }
+            };
+
+            const handleFallback = () => {
+              console.warn('Browser geolocation failed or blocked, trying IP fallback...');
+              fetch('https://ipapi.co/json/')
+                .then(res => res.json())
+                .then(data => {
+                  if (data.latitude && data.longitude) {
+                    const userCoords: [number, number] = [data.latitude, data.longitude];
+                    setUserPosition(userCoords);
+                    if (mapInstance) {
+                      mapInstance.setView(userCoords, 15, { animate: true });
+                    }
+                  } else {
+                    alert('Không thể xác định vị trí của bạn. Vui lòng bật định vị trên trình duyệt.');
+                  }
+                })
+                .catch(() => {
+                  alert('Không thể xác định vị trí của bạn. Vui lòng bật định vị trên trình duyệt.');
+                });
+            };
+
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(handleSuccess, handleFallback, {
+                enableHighAccuracy: true,
+                timeout: 5000
+              });
+            } else {
+              handleFallback();
+            }
+          }}
+          className="w-8 h-8 bg-white/95 backdrop-blur-md rounded-lg shadow-md border border-slate-200/50 flex items-center justify-center text-slate-700 hover:text-blue-600 hover:bg-slate-50 transition-all duration-200 active:scale-95 cursor-pointer"
+          title="Định vị của bạn"
+        >
+          <Locate className="w-4 h-4 text-blue-600" />
+        </button>
+
+        {/* Zoom Controls */}
+        <div className="flex flex-col bg-white/95 backdrop-blur-md rounded-lg shadow-md border border-slate-200/50 overflow-hidden">
+          <button
+            onClick={() => {
+              if (mapInstance) {
+                mapInstance.zoomIn();
+              }
+            }}
+            className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
+            title="Phóng to"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+          
+          <div className="h-px bg-slate-200/60 mx-1.5"></div>
+          
+          <button
+            onClick={() => {
+              if (mapInstance) {
+                mapInstance.zoomOut();
+              }
+            }}
+            className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
+            title="Thu nhỏ"
+          >
+            <Minus className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Bottom Center - Directions & Travel Info Dashboard */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-2xl px-4 pointer-events-none">
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200/50 p-4 pointer-events-auto transition-all duration-300 relative">
+          {userPosition ? (
+            <>
+              {/* Stop Navigation Button */}
+              <button
+                onClick={() => {
+                  setUserPosition(null);
+                  setUserToDeviceRoute([]);
+                  setUserRouteDistance(null);
+                  setUserRouteDuration(null);
+                }}
+                className="absolute top-2 right-2 p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50/80 transition-all duration-200 pointer-events-auto cursor-pointer"
+                title="Dừng dẫn đường"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center justify-between gap-6 pr-4">
+                
+                {/* Departure - User Position */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping"></div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-600">Vị trí của bạn</span>
+                  </div>
+                  <p className="text-xs font-bold text-slate-800 truncate">Vị trí hiện tại</p>
+                  <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                    {userPosition[0].toFixed(5)}°N, {userPosition[1].toFixed(5)}°E
+                  </p>
+                </div>
+
+                {/* Travel Statistics - Middle */}
+                <div className="flex flex-col items-center justify-center px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100 min-w-[180px]">
+                  {userRouteDistance !== null && userRouteDuration !== null ? (
+                    <>
+                      <div className="flex items-center gap-1 mb-0.5">
+                        <Navigation className="w-3.5 h-3.5 text-cyan-600 animate-pulse" />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Đến thiết bị</span>
+                      </div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-lg font-black text-cyan-600">{userRouteDistance.toFixed(1)}</span>
+                        <span className="text-[10px] font-bold text-cyan-600">km</span>
+                        <span className="mx-1 text-slate-300">•</span>
+                        <span className="text-sm font-black text-orange-500">{userRouteDuration}</span>
+                      </div>
+                      <div className="w-full bg-slate-200 h-[3px] rounded-full mt-2 overflow-hidden relative">
+                        <div className="bg-gradient-to-r from-blue-500 to-cyan-500 h-full rounded-full w-2/3 animate-pulse" style={{ animationDuration: '2s' }}></div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                      <div className="w-3 h-3 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+                      Tính toán đường đi...
+                    </div>
+                  )}
+                </div>
+
+                {/* Destination - IoT Device */}
+                <div className="flex-1 min-w-0 text-right pr-2">
+                  <div className="flex items-center justify-end gap-2 mb-1.5">
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#00b494]">Thiết bị mục tiêu</span>
+                    <div className="w-2.5 h-2.5 bg-[#00b494] rounded-full animate-pulse"></div>
+                  </div>
+                  <p className="text-xs font-bold text-slate-800 truncate">MoniMove - 01</p>
+                  <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                    {currentPosition[0].toFixed(5)}°N, {currentPosition[1].toFixed(5)}°E
+                  </p>
+                </div>
+
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-between gap-4 py-1">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shadow-inner">
+                  <Navigation className="w-5 h-5 animate-bounce" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-800">Bắt đầu dẫn đường đến thiết bị</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">Vui lòng định vị vị trí hiện tại của bạn để hiển thị lộ trình và khoảng cách.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  const locateButton = document.querySelector('[title="Định vị của bạn"]') as HTMLButtonElement;
+                  if (locateButton) locateButton.click();
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:brightness-105 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md transition-all whitespace-nowrap cursor-pointer"
+              >
+                📍 Định vị ngay
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Helper to grab map instance from Leaflet context
+function MapInstanceGrabber({ onChange }: { onChange: (map: L.Map) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    if (map) onChange(map);
+  }, [map, onChange]);
+  return null;
+}

@@ -19,6 +19,9 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
   
+  // Set global prefix to api
+  app.setGlobalPrefix('api');
+  
   // Bật CORS để Frontend Next.js (cổng 3000) có thể thoải mái gọi API sang đây
   app.enableCors();
 

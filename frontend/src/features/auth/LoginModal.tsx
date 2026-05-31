@@ -16,65 +16,56 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
   if (!isOpen) return null;
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLoginSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
 
     if (username === 'admin' && password === 'admin') {
       router.push('/DeviceCard');
       onClose();
-    } else {
-      alert('Tài khoản hoặc mật khẩu không đúng! Thử: admin/admin');
+      return;
     }
+
+    alert('Tài khoản hoặc mật khẩu không đúng. Thử: admin/admin');
   };
 
   return (
     <>
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/50 z-[9998]"
-        onClick={onClose}
-      />
-      
-      {/* Modal Content */}
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
-        <div 
-          className="bg-white w-full max-w-md p-8 rounded-[28px] shadow-2xl border border-slate-100 relative pointer-events-auto animate-in fade-in zoom-in duration-200"
-          onClick={(e) => e.stopPropagation()}
+      <div className="fixed inset-0 z-[9998] bg-black/50" onClick={onClose} />
+
+      <div className="pointer-events-none fixed inset-0 z-[9999] flex items-center justify-center p-4">
+        <div
+          className="pointer-events-auto relative w-full max-w-md rounded-[28px] border border-slate-100 bg-white p-8 shadow-2xl animate-in fade-in zoom-in duration-200"
+          onClick={(event) => event.stopPropagation()}
         >
-          {/* Nút đóng */}
-          <button 
+          <button
             onClick={onClose}
-            className="absolute top-5 right-5 p-1.5 rounded-full text-slate-400 hover:bg-red-50 hover:text-red-500 active:scale-90 transition-all duration-200"
+            className="absolute right-5 top-5 rounded-full p-1.5 text-slate-400 transition-all duration-200 hover:bg-red-50 hover:text-red-500 active:scale-90"
             type="button"
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5" />
           </button>
 
-          {/* Tiêu đề */}
-          <div className="text-center mb-8">
-            <div className="w-[34px] h-[34px] bg-gradient-to-br from-[#12a1c0] to-[#00b494] rounded-[11px] flex items-center justify-center mx-auto mb-3">
-              <svg viewBox="0 0 24 24" className="w-[18px] h-[18px] text-white fill-current" fillRule="evenodd" clipRule="evenodd">
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-3 flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-gradient-to-br from-[#12a1c0] to-[#00b494]">
+              <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] fill-current text-white" fillRule="evenodd" clipRule="evenodd">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 4a3 3 0 100 6 3 3 0 000-6z" />
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-slate-950">Chào mừng trở lại</h2>
-            <p className="text-sm text-slate-400 mt-1">Đăng nhập để theo dõi thiết bị MoniMove</p>
+            <p className="mt-1 text-sm text-slate-400">Đăng nhập để theo dõi thiết bị MoniMove</p>
           </div>
 
-          {/* Form nhập liệu */}
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Tài khoản
-              </label>
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">Tài khoản</label>
               <div className="relative">
-                <User className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 pointer-events-none" />
-                <input 
-                  type="text" 
-                  placeholder="admin" 
+                <User className="pointer-events-none absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="admin"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#00b494] focus:bg-white focus:ring-2 focus:ring-[#00b494]/20 transition-all text-slate-800"
+                  onChange={(event) => setUsername(event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm text-slate-800 transition-all focus:border-[#00b494] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00b494]/20"
                   required
                   autoComplete="username"
                 />
@@ -82,26 +73,24 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Mật khẩu
-              </label>
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">Mật khẩu</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 pointer-events-none" />
-                <input 
-                  type="password" 
-                  placeholder="admin" 
+                <Lock className="pointer-events-none absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
+                <input
+                  type="password"
+                  placeholder="admin"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#00b494] focus:bg-white focus:ring-2 focus:ring-[#00b494]/20 transition-all text-slate-800"
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm text-slate-800 transition-all focus:border-[#00b494] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00b494]/20"
                   required
                   autoComplete="current-password"
                 />
               </div>
             </div>
 
-            <div className="flex justify-between items-center text-xs font-semibold pt-1">
-              <label className="flex items-center gap-1.5 text-slate-500 cursor-pointer">
-                <input type="checkbox" className="rounded border-slate-300 text-[#00b494] focus:ring-[#00b494]" /> 
+            <div className="flex items-center justify-between pt-1 text-xs font-semibold">
+              <label className="flex cursor-pointer items-center gap-1.5 text-slate-500">
+                <input type="checkbox" className="rounded border-slate-300 text-[#00b494] focus:ring-[#00b494]" />
                 Ghi nhớ
               </label>
               <button type="button" className="text-[#1f75fe] hover:underline">
@@ -109,18 +98,17 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               </button>
             </div>
 
-            <button 
-              type="submit" 
-              className="w-full py-3.5 mt-4 bg-gradient-to-r from-[#29cca2] to-[#54aafa] text-white font-semibold rounded-xl text-sm shadow-sm hover:shadow-[0_0_20px_rgba(41,204,162,0.4)] hover:brightness-105 active:scale-[0.98] transition-all"
+            <button
+              type="submit"
+              className="mt-4 w-full rounded-xl bg-gradient-to-r from-[#29cca2] to-[#54aafa] py-3.5 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-105 hover:shadow-[0_0_20px_rgba(41,204,162,0.4)] active:scale-[0.98]"
             >
               Đăng nhập hệ thống
             </button>
           </form>
 
-          {/* Hint */}
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-            <p className="text-xs text-blue-600 text-center">
-              💡 Demo: <strong>admin</strong> / <strong>admin</strong>
+          <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-3">
+            <p className="text-center text-xs text-blue-600">
+              Demo: <strong>admin</strong> / <strong>admin</strong>
             </p>
           </div>
         </div>
