@@ -1,6 +1,14 @@
 // API Service để kết nối Backend
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const getApiBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    return `http://${hostname}:3001/api`;
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export interface DevicePosition {
   lat: number;
@@ -23,12 +31,28 @@ export interface DeviceInfo {
   status: 'active' | 'inactive' | 'warning';
   battery?: number;
   lastUpdate?: number;
+  current_data?: {
+    gps: {
+      latitude: number;
+      longitude: number;
+      speed: number;
+      satellites: number;
+      updated_at: number;
+    };
+    mpu6050: {
+      accel: { x: number; y: number; z: number };
+      gyro: { x: number; y: number; z: number };
+      is_tilted: boolean;
+    };
+  };
 }
 
 // Lấy vị trí hiện tại của thiết bị
 export async function getCurrentPosition(deviceId: string): Promise<DevicePosition> {
   try {
-    const response = await fetch(`${API_BASE_URL}/devices/${deviceId}/position`);
+    const response = await fetch(`${API_BASE_URL}/devices/${deviceId}/position`, {
+      headers: getAuthHeaders()
+    });
     if (!response.ok) throw new Error('Failed to fetch position');
     return await response.json();
   } catch (error) {
@@ -47,7 +71,9 @@ export async function getCurrentPosition(deviceId: string): Promise<DevicePositi
 // Lấy lộ trình của thiết bị
 export async function getDeviceRoute(deviceId: string): Promise<DeviceRoute> {
   try {
-    const response = await fetch(`${API_BASE_URL}/devices/${deviceId}/route`);
+    const response = await fetch(`${API_BASE_URL}/devices/${deviceId}/route`, {
+      headers: getAuthHeaders()
+    });
     if (!response.ok) throw new Error('Failed to fetch route');
     return await response.json();
   } catch (error) {
@@ -67,7 +93,9 @@ export async function getDeviceRoute(deviceId: string): Promise<DeviceRoute> {
 // Lấy thông tin thiết bị
 export async function getDeviceInfo(deviceId: string): Promise<DeviceInfo> {
   try {
-    const response = await fetch(`${API_BASE_URL}/devices/${deviceId}`);
+    const response = await fetch(`${API_BASE_URL}/devices/${deviceId}`, {
+      headers: getAuthHeaders()
+    });
     if (!response.ok) throw new Error('Failed to fetch device info');
     return await response.json();
   } catch (error) {
@@ -91,7 +119,8 @@ export async function getPositionHistory(
 ): Promise<DevicePosition[]> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/devices/${deviceId}/history?start=${startTime}&end=${endTime}`
+      `${API_BASE_URL}/devices/${deviceId}/history?start=${startTime}&end=${endTime}`,
+      { headers: getAuthHeaders() }
     );
     if (!response.ok) throw new Error('Failed to fetch history');
     return await response.json();
@@ -101,17 +130,51 @@ export async function getPositionHistory(
   }
 }
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('firebase_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  };
+};
+
 // Gửi cảnh báo
 export async function sendAlert(deviceId: string, alertType: string, message: string) {
   try {
     const response = await fetch(`${API_BASE_URL}/alerts`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ deviceId, alertType, message, timestamp: Date.now() })
     });
     return await response.json();
   } catch (error) {
     console.error('Error sending alert:', error);
     throw error;
+  }
+}
+
+export interface AlertLog {
+  id: string;
+  deviceId: string;
+  alertType: string;
+  message: string;
+  timestamp: number;
+}
+
+// Lấy lịch sử các sự cố/cảnh báo
+export async function getAlertsHistory(deviceId?: string): Promise<AlertLog[]> {
+  try {
+    const url = deviceId 
+      ? `${API_BASE_URL}/alerts?deviceId=${deviceId}`
+      : `${API_BASE_URL}/alerts`;
+      
+    const response = await fetch(url, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to fetch alerts history');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching alerts history:', error);
+    return [];
   }
 }

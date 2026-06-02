@@ -1,5 +1,5 @@
 import { useRouter } from 'next/navigation';
-import { LayoutDashboard, Cpu, Settings, Info, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, Cpu, Settings, Info, LogOut, User, AlertTriangle } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -14,6 +14,7 @@ export default function Sidebar({ isOpen, onClose, activeTab, onTabChange }: Sid
   const menuItems = [
     { id: 'monitor', label: 'Giám sát', icon: LayoutDashboard },
     { id: 'list_devices', label: 'Thiết bị', icon: Cpu },
+    { id: 'alerts_history', label: 'Sự cố', icon: AlertTriangle },
     { id: 'settings', label: 'Cài đặt', icon: Settings },
     { id: 'about', label: 'Giới thiệu', icon: Info },
   ];
@@ -155,7 +156,10 @@ export default function Sidebar({ isOpen, onClose, activeTab, onTabChange }: Sid
         </div>
 
         <button
-          onClick={() => router.push('/')}
+          onClick={() => {
+            localStorage.removeItem('firebase_token');
+            router.push('/');
+          }}
           className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-white border border-slate-200/80 px-3 py-2 text-xs font-bold text-slate-700 transition-all duration-150 hover:bg-slate-50 hover:text-slate-900 active:scale-95 shadow-sm"
         >
           <LogOut className="h-3.5 w-3.5" />

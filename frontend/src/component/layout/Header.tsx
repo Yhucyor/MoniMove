@@ -7,7 +7,7 @@ interface HeaderProps {
 
 export default function Header({ onOpenSidebar }: HeaderProps) {
   return (
-    <div className="sticky top-0 z-30 flex items-center p-4 md:px-8 bg-slate-50/80 backdrop-blur-md">
+    <div className="absolute top-0 left-0 right-0 z-30 flex items-center p-4 md:px-8 bg-transparent backdrop-blur-md">
       <button 
         onClick={onOpenSidebar}
         className="p-2.5 bg-white border border-slate-200/60 rounded-xl shadow-sm text-slate-600 hover:text-[#00b494] hover:border-[#00b494]/30 transition-all active:scale-95"

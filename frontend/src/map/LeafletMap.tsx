@@ -489,7 +489,7 @@ export default function MapComponent({ showRoute = true, showSafeZone = true }: 
             <div className="text-sm font-sans p-2 min-w-[220px]">
               <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-200">
                 <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <p className="font-bold text-[#00b494] text-base">MoniMove - 01</p>
+                <p className="font-bold text-[#00b494] text-base">Nạn nhân (MoniMove)</p>
               </div>
               <div className="space-y-2 text-xs text-slate-600">
                 <div className="flex items-center gap-2">
@@ -706,7 +706,7 @@ export default function MapComponent({ showRoute = true, showSafeZone = true }: 
                     <>
                       <div className="flex items-center gap-1 mb-0.5">
                         <Navigation className="w-3.5 h-3.5 text-cyan-600 animate-pulse" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Đến thiết bị</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Đến chỗ nạn nhân</span>
                       </div>
                       <div className="flex items-baseline gap-1">
                         <span className="text-lg font-black text-cyan-600">{userRouteDistance.toFixed(1)}</span>
@@ -729,10 +729,10 @@ export default function MapComponent({ showRoute = true, showSafeZone = true }: 
                 {/* Destination - IoT Device */}
                 <div className="flex-1 min-w-0 text-right pr-2">
                   <div className="flex items-center justify-end gap-2 mb-1.5">
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#00b494]">Thiết bị mục tiêu</span>
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#00b494]">Vị trí nạn nhân</span>
                     <div className="w-2.5 h-2.5 bg-[#00b494] rounded-full animate-pulse"></div>
                   </div>
-                  <p className="text-xs font-bold text-slate-800 truncate">MoniMove - 01</p>
+                  <p className="text-xs font-bold text-slate-800 truncate">Nạn nhân (MoniMove)</p>
                   <p className="text-[11px] text-slate-500 font-mono mt-0.5">
                     {currentPosition[0].toFixed(5)}°N, {currentPosition[1].toFixed(5)}°E
                   </p>
@@ -747,8 +747,8 @@ export default function MapComponent({ showRoute = true, showSafeZone = true }: 
                   <Navigation className="w-5 h-5 animate-bounce" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-slate-800">Bắt đầu dẫn đường đến thiết bị</h4>
-                  <p className="text-xs text-slate-500 mt-0.5">Vui lòng định vị vị trí hiện tại của bạn để hiển thị lộ trình và khoảng cách.</p>
+                  <h4 className="text-sm font-bold text-slate-800">Bắt đầu dẫn đường cứu nạn</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">Vui lòng định vị vị trí hiện tại của bạn để hiển thị lộ trình và khoảng cách cứu nạn.</p>
                 </div>
               </div>
               <button

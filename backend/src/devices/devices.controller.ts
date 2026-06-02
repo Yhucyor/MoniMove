@@ -1,7 +1,9 @@
-import { Controller, Get, Param, Query, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Param, Query, NotFoundException, BadRequestException, UseGuards } from '@nestjs/common';
 import { DevicesService } from './devices.service';
+import { FirebaseAuthGuard } from '../firebase/firebase-auth.guard';
 
 @Controller('devices')
+@UseGuards(FirebaseAuthGuard)
 export class DevicesController {
   constructor(private readonly devicesService: DevicesService) {}
 

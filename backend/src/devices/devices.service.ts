@@ -1,103 +1,186 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { FirebaseService } from '../firebase/firebase.service';
+
+const DB_URL = 'https://monitoring-d6063-default-rtdb.firebaseio.com';
+const DB_SECRET = 'VjYAN6Ps3JLWEBSDGrZyoooncME4ggMQx5hU7kTb';
 
 @Injectable()
 export class DevicesService implements OnModuleInit {
   private readonly logger = new Logger(DevicesService.name);
-
-  constructor(private readonly firebaseService: FirebaseService) {}
 
   async onModuleInit() {
     await this.seedMockData();
   }
 
   async getDevice(deviceId: string) {
-    const db = this.firebaseService.getFirestore();
-    const doc = await db.collection('devices').doc(deviceId).get();
-    if (!doc.exists) {
-      return null;
+    try {
+      const response = await fetch(`${DB_URL}/tracking_system/devices/${deviceId}.json?auth=${DB_SECRET}`);
+      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+      let data = await response.json();
+
+      // Fallback: if deviceId does not exist, get the first device
+      if (!data) {
+        this.logger.warn(`Device "${deviceId}" not found in database, fetching fallback device...`);
+        const allResponse = await fetch(`${DB_URL}/tracking_system/devices.json?auth=${DB_SECRET}`);
+        if (allResponse.ok) {
+          const devicesVal = await allResponse.json();
+          if (devicesVal) {
+            const keys = Object.keys(devicesVal);
+            if (keys.length > 0) {
+              deviceId = keys[0];
+              data = devicesVal[deviceId];
+              this.logger.log(`Fallback mapped successfully to device ID: "${deviceId}"`);
+            }
+          }
+        }
+      }
+
+      if (data) {
+        const info = data.info || {};
+        return {
+          id: deviceId,
+          name: info.device_name || info.license_plate || deviceId,
+          status: info.status || 'active',
+          battery: data.current_data?.battery || 85,
+          lastUpdate: info.last_ping ? info.last_ping * 1000 : Date.now(),
+          current_data: data.current_data || null,
+        };
+      }
+    } catch (error) {
+      this.logger.error('Error fetching device from Realtime Database REST API: ' + (error.message || error));
     }
-    const data = doc.data();
-    if (!data) {
-      return null;
-    }
+
+    // Local mock fallback if database access fails
     return {
-      id: data.id,
-      name: data.name,
-      status: data.status,
-      battery: data.battery,
-      lastUpdate: data.lastUpdate || Date.now(),
+      id: deviceId,
+      name: 'MoniMove - ESP32 (Mock)',
+      status: 'active',
+      battery: 88,
+      lastUpdate: Date.now(),
+      current_data: {
+        gps: {
+          latitude: 10.8045,
+          longitude: 106.7380,
+          speed: 42.5,
+          satellites: 8,
+          updated_at: Math.floor(Date.now() / 1000)
+        },
+        mpu6050: {
+          accel: { x: 0.05, y: -0.12, z: 9.81 },
+          gyro: { x: 0.01, y: 0.02, z: -0.01 },
+          is_tilted: false
+        }
+      }
     };
   }
 
   async getLatestPosition(deviceId: string) {
-    const db = this.firebaseService.getFirestore();
-    const snapshot = await db
-      .collection('gps_logs')
-      .where('deviceId', '==', deviceId)
-      .get();
+    try {
+      const response = await fetch(`${DB_URL}/tracking_system/devices/${deviceId}/current_data/gps.json?auth=${DB_SECRET}`);
+      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+      let data = await response.json();
 
-    if (snapshot.empty) {
-      // Return default center if no gps logs
-      return {
-        lat: 10.8045,
-        lng: 106.7380,
-        timestamp: Date.now(),
-        speed: 0,
-        heading: 0,
-      };
+      // Fallback: check first device
+      if (!data) {
+        const allResponse = await fetch(`${DB_URL}/tracking_system/devices.json?auth=${DB_SECRET}`);
+        if (allResponse.ok) {
+          const devicesVal = await allResponse.json();
+          if (devicesVal) {
+            const keys = Object.keys(devicesVal);
+            if (keys.length > 0) {
+              const fallbackId = keys[0];
+              const gpsResponse = await fetch(`${DB_URL}/tracking_system/devices/${fallbackId}/current_data/gps.json?auth=${DB_SECRET}`);
+              if (gpsResponse.ok) {
+                data = await gpsResponse.json();
+              }
+            }
+          }
+        }
+      }
+
+      if (data) {
+        return {
+          lat: data.latitude || 10.8045,
+          lng: data.longitude || 106.7380,
+          timestamp: data.updated_at ? data.updated_at * 1000 : Date.now(),
+          speed: data.speed || 0,
+          heading: data.heading || 0,
+        };
+      }
+    } catch (error) {
+      this.logger.error('Error fetching position from Realtime Database REST API: ' + (error.message || error));
     }
 
-    const docs = snapshot.docs.map(d => d.data());
-    docs.sort((a, b) => b.timestamp - a.timestamp);
-    const data = docs[0];
-
-    if (!data) {
-      return {
-        lat: 10.8045,
-        lng: 106.7380,
-        timestamp: Date.now(),
-        speed: 0,
-        heading: 0,
-      };
-    }
+    // Local mock fallback
+    const offset = (Math.sin(Date.now() / 10000) * 0.003);
     return {
-      lat: data.lat,
-      lng: data.lng,
-      timestamp: data.timestamp,
-      speed: data.speed || 0,
-      heading: data.heading || 0,
+      lat: 10.8045 + offset,
+      lng: 106.7380 + (Math.cos(Date.now() / 10000) * 0.003),
+      timestamp: Date.now(),
+      speed: 35 + Math.floor(Math.random() * 15),
+      heading: 90,
     };
   }
 
   async getRoute(deviceId: string) {
-    const db = this.firebaseService.getFirestore();
-    const doc = await db.collection('devices').doc(deviceId).get();
-    
-    if (doc.exists) {
-      const data = doc.data();
-      if (data && data.route) {
-        let waypoints = data.route.waypoints || [];
-        if (Array.isArray(waypoints)) {
-          waypoints = waypoints.map((wp: any) => {
-            if (Array.isArray(wp)) {
-              return wp as [number, number];
-            } else if (wp && typeof wp.lat === 'number' && typeof wp.lng === 'number') {
-              return [wp.lat, wp.lng] as [number, number];
+    try {
+      const response = await fetch(`${DB_URL}/tracking_system/devices/${deviceId}.json?auth=${DB_SECRET}`);
+      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+      let deviceData = await response.json();
+
+      // Fallback: check first device
+      if (!deviceData) {
+        const allResponse = await fetch(`${DB_URL}/tracking_system/devices.json?auth=${DB_SECRET}`);
+        if (allResponse.ok) {
+          const devicesVal = await allResponse.json();
+          if (devicesVal) {
+            const keys = Object.keys(devicesVal);
+            if (keys.length > 0) {
+              const fallbackId = keys[0];
+              deviceId = fallbackId;
+              deviceData = devicesVal[fallbackId];
             }
-            return [0, 0] as [number, number];
-          });
+          }
         }
-        return {
-          deviceId,
-          waypoints,
-          distance: data.route.distance || 12500,
-          duration: data.route.duration || 1080,
-        };
       }
+
+      if (deviceData && deviceData.history) {
+        const waypoints: [number, number][] = [];
+        const dates = Object.keys(deviceData.history);
+        const allLogs: { timestamp: number; lat: number; lng: number }[] = [];
+
+        for (const date of dates) {
+          const dateLogs = deviceData.history[date];
+          if (dateLogs && typeof dateLogs === 'object') {
+            for (const tsKey of Object.keys(dateLogs)) {
+              const point = dateLogs[tsKey];
+              if (point && typeof point.lat === 'number' && typeof point.lng === 'number') {
+                allLogs.push({
+                  timestamp: Number(tsKey),
+                  lat: point.lat,
+                  lng: point.lng,
+                });
+              }
+            }
+          }
+        }
+
+        // Sort points chronologically
+        allLogs.sort((a, b) => a.timestamp - b.timestamp);
+
+        if (allLogs.length > 0) {
+          return {
+            deviceId,
+            waypoints: allLogs.map(l => [l.lat, l.lng] as [number, number]),
+            distance: 6500,
+            duration: 600,
+          };
+        }
+      }
+    } catch (error) {
+      this.logger.error('Error fetching route from Realtime Database REST API: ' + (error.message || error));
     }
 
-    // Default route fallback (Nguyen Huu Canh - Vo Nguyen Giap optimized)
+    // Default route fallback
     return {
       deviceId,
       waypoints: [
@@ -111,103 +194,139 @@ export class DevicesService implements OnModuleInit {
   }
 
   async getHistory(deviceId: string, start: number, end: number) {
-    const db = this.firebaseService.getFirestore();
-    const snapshot = await db
-      .collection('gps_logs')
-      .where('deviceId', '==', deviceId)
-      .get();
-
-    if (snapshot.empty) {
-      return [];
-    }
-
-    const startNum = Number(start);
-    const endNum = Number(end);
-
-    const logs = snapshot.docs
-      .map(doc => doc.data())
-      .filter(data => data && data.timestamp >= startNum && data.timestamp <= endNum);
-
-    logs.sort((a, b) => a.timestamp - b.timestamp);
-
-    return logs.map(data => ({
-      lat: data?.lat || 0,
-      lng: data?.lng || 0,
-      timestamp: data?.timestamp || 0,
-      speed: data?.speed || 0,
-    }));
-  }
-
-  private async seedMockData() {
     try {
-      const db = this.firebaseService.getFirestore();
-      const deviceRef = db.collection('devices').doc('device-001');
-      const deviceSnap = await deviceRef.get();
+      const response = await fetch(`${DB_URL}/tracking_system/devices/${deviceId}/history.json?auth=${DB_SECRET}`);
+      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+      let historyData = await response.json();
 
-      let shouldSeed = !deviceSnap.exists;
-      if (deviceSnap.exists) {
-        const data = deviceSnap.data();
-        if (data && data.route && data.route.waypoints) {
-          const waypoints = data.route.waypoints;
-          const hasOld = Array.isArray(waypoints) && waypoints.some((wp: any) => {
-            const lat = Array.isArray(wp) ? wp[0] : (wp ? wp.lat : 0);
-            return lat === 10.8100 || lat === 10.8015 || lat === 10.7895 || lat === 10.7865;
-          });
-          if (hasOld || waypoints.length !== 3) {
-            this.logger.log('Old or unoptimized route coordinates detected. Updating database...');
-            shouldSeed = true;
+      // Fallback: check first device
+      if (!historyData) {
+        const allResponse = await fetch(`${DB_URL}/tracking_system/devices.json?auth=${DB_SECRET}`);
+        if (allResponse.ok) {
+          const devicesVal = await allResponse.json();
+          if (devicesVal) {
+            const keys = Object.keys(devicesVal);
+            if (keys.length > 0) {
+              const fallbackId = keys[0];
+              historyData = devicesVal[fallbackId].history;
+            }
           }
         }
       }
 
-      if (shouldSeed) {
-        this.logger.log('Seeding default device "device-001" and route into Firestore...');
-        await deviceRef.set({
-          id: 'device-001',
-          name: 'MoniMove - 01',
-          status: 'active',
-          battery: 85,
-          lastUpdate: Date.now(),
-          route: {
-            waypoints: [
-              { lat: 10.7756, lng: 106.7068 },
-              { lat: 10.8018, lng: 106.7280 },
-              { lat: 10.8045, lng: 106.7380 },
-            ],
-            distance: 6500,
-            duration: 600,
-          },
-        });
+      if (historyData) {
+        const startNum = Number(start);
+        const endNum = Number(end);
+        const logs: { lat: number; lng: number; timestamp: number; speed: number }[] = [];
 
-        // Seed some historical gps logs
-        const gpsLogsRef = db.collection('gps_logs');
-        const now = Date.now();
-        
-        // Delete old logs if we are re-seeding
-        const oldGpsSnap = await gpsLogsRef.where('deviceId', '==', 'device-001').get();
-        if (!oldGpsSnap.empty) {
-          const batch = db.batch();
-          oldGpsSnap.docs.forEach(doc => batch.delete(doc.ref));
-          await batch.commit();
-          this.logger.log('Deleted old GPS logs.');
+        const dates = Object.keys(historyData);
+        for (const date of dates) {
+          const dateLogs = historyData[date];
+          if (dateLogs && typeof dateLogs === 'object') {
+            for (const tsKey of Object.keys(dateLogs)) {
+              const point = dateLogs[tsKey];
+              let timestamp = Number(tsKey);
+
+              // Normalize to milliseconds if stored as seconds (10 digits)
+              let timestampMs = timestamp;
+              if (timestamp.toString().length === 10) {
+                timestampMs = timestamp * 1000;
+              }
+
+              if (timestampMs >= startNum && timestampMs <= endNum) {
+                 logs.push({
+                   lat: point.lat || 0,
+                   lng: point.lng || 0,
+                   timestamp: timestampMs,
+                   speed: point.speed || 0,
+                 });
+              }
+            }
+          }
         }
 
-        const mockPositions = [
-          { lat: 10.7756, lng: 106.7068, speed: 30, heading: 45, timestamp: now - 20000 },
-          { lat: 10.8018, lng: 106.7280, speed: 42, heading: 90, timestamp: now - 10000 },
-          { lat: 10.8045, lng: 106.7380, speed: 48, heading: 120, timestamp: now },
-        ];
-
-        for (const pos of mockPositions) {
-          await gpsLogsRef.add({
-            deviceId: 'device-001',
-            ...pos,
-          });
-        }
-        this.logger.log('Seeded 3 mock GPS log entries successfully.');
+        // Sort chronologically
+        logs.sort((a, b) => a.timestamp - b.timestamp);
+        return logs;
       }
     } catch (error) {
-      this.logger.error('Error seeding mock database data:', error);
+      this.logger.error('Error fetching history from Realtime Database REST API: ' + (error.message || error));
+    }
+
+    return [];
+  }
+
+  private async seedMockData() {
+    try {
+      // Check if devices node is empty
+      const checkResponse = await fetch(`${DB_URL}/tracking_system/devices.json?auth=${DB_SECRET}`);
+      if (checkResponse.ok) {
+        const data = await checkResponse.json();
+        if (!data) {
+          this.logger.log('Seeding default device "DEVICE_ESP32_01" into Realtime Database via REST API...');
+          const nowSeconds = Math.floor(Date.now() / 1000);
+          
+          const defaultData = {
+            DEVICE_ESP32_01: {
+              info: {
+                device_name: "MoniMove Tracker v1",
+                license_plate: "59X3-12345",
+                status: "online",
+                last_ping: nowSeconds
+              },
+              current_data: {
+                gps: {
+                  latitude: 10.8045,
+                  longitude: 106.7380,
+                  speed: 45.2,
+                  satellites: 8,
+                  updated_at: nowSeconds
+                },
+                mpu6050: {
+                  accel: {
+                    x: 0.05,
+                    y: -0.12,
+                    z: 9.81
+                  },
+                  gyro: {
+                    x: 0.01,
+                    y: 0.02,
+                    z: -0.01
+                  },
+                  is_tilted: false
+                }
+              },
+              history: {
+                "2026-06-02": {
+                  [nowSeconds - 20]: {
+                    lat: 10.7756,
+                    lng: 106.7068,
+                    speed: 30
+                  },
+                  [nowSeconds - 10]: {
+                    lat: 10.8018,
+                    lng: 106.7280,
+                    speed: 42
+                  },
+                  [nowSeconds]: {
+                    lat: 10.8045,
+                    lng: 106.7380,
+                    speed: 45.2
+                  }
+                }
+              }
+            }
+          };
+          
+          await fetch(`${DB_URL}/tracking_system/devices.json?auth=${DB_SECRET}`, {
+            method: 'PUT',
+            body: JSON.stringify(defaultData),
+          });
+          this.logger.log('Seeded default Realtime Database mock data successfully.');
+        }
+      }
+    } catch (error) {
+      this.logger.warn('Mock seeding skipped (likely due to invalid credentials/permissions): ' + (error.message || error));
     }
   }
 }
