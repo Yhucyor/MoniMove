@@ -1,8 +1,6 @@
-// frontend/src/config/firebase.ts
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
-// ✅ SỬA: Dùng biến môi trường thay vì hardcode API key
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -13,7 +11,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
+console.log("🔥 Firebase initialized for Project ID:", firebaseConfig.projectId);
 const app = initializeApp(firebaseConfig);
-
-// Xuất biến auth ra ngoài để component LoginModal có thể sử dụng
 export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();

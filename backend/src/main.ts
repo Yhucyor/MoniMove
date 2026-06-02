@@ -11,6 +11,7 @@ async function bootstrap() {
   try {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccountPath),
+      databaseURL: 'https://monitoring-d6063-default-rtdb.firebaseio.com',
     });
     console.log('🎉 Firebase Admin đã khởi tạo thành công!');
   } catch (error) {
@@ -19,11 +20,14 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
   
+  // Set global prefix to api
+  app.setGlobalPrefix('api');
+  
   // Bật CORS để Frontend Next.js (cổng 3000) có thể thoải mái gọi API sang đây
   app.enableCors();
 
   // Đổi cổng thành 3001 để không bị đụng hàng với Next.js (cổng 3000)
-  await app.listen(process.env.PORT ?? 3001);
+  await app.listen(process.env.PORT ?? 3001, '0.0.0.0');
   console.log(`🚀 Backend đang chạy tại: http://localhost:3001`);
 }
 bootstrap();
