@@ -12,3 +12,15 @@ services:
         value: 20.11.0
       - key: NODE_ENV
         value: production
+      - key: NEXT_PUBLIC_FIREBASE_API_KEY
+        value: AIzaSyAQGHnSICLu-1QpOItRIYen0y5AxPbIMtc
+      - key: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+        value: monimove-6cd1d.firebaseapp.com
+      - key: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+        value: monimove-6cd1d
+      - key: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+        value: monimove-6cd1d.firebasestorage.app
+      - key: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+        value: 924125576856
+      - key: NEXT_PUBLIC_FIREBASE_APP_ID
+        value: 1:924125576856:web:853fae140460e139de1aed

@@ -1,15 +1,16 @@
-// API Service để kết nối Backend
+// API Service for connecting to Backend
 
 const getApiBaseUrl = () => {
   // Prefer a dedicated env variable for the backend URL if set
   const envUrl = typeof window !== 'undefined' ? process.env.NEXT_PUBLIC_BACKEND_URL : undefined;
   if (envUrl) return envUrl;
 
-  // Fallback to same host with default backend port (3000) – works in local dev
+  // Fallback: use the same host with default backend port (3001)
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
     return `http://${hostname}:3001/api`;
   }
+
   // Server‑side fallback
   return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001/api';
 };
@@ -53,7 +54,7 @@ export interface DeviceInfo {
   };
 }
 
-// Lấy vị trí hiện tại của thiết bị
+// Get current position of a device
 export async function getCurrentPosition(deviceId: string): Promise<DevicePosition> {
   try {
     const response = await fetch(`${API_BASE_URL}/devices/${deviceId}/position`, {
@@ -74,7 +75,7 @@ export async function getCurrentPosition(deviceId: string): Promise<DevicePositi
   }
 }
 
-// Lấy lộ trình của thiết bị
+// Get device route
 export async function getDeviceRoute(deviceId: string): Promise<DeviceRoute> {
   try {
     const response = await fetch(`${API_BASE_URL}/devices/${deviceId}/route`, {
@@ -90,20 +91,20 @@ export async function getDeviceRoute(deviceId: string): Promise<DeviceRoute> {
       waypoints: [
         [10.7756, 106.7068],
         [10.8018, 106.7280],
-        [10.8045, 106.7380],
+        [10.8045, 106.7380]
       ]
     };
   }
 }
 
-// Lấy thông tin thiết bị
+// Get device info
 export async function getDeviceInfo(deviceId: string): Promise<DeviceInfo> {
   try {
-// Debug: show the base URL being used
-  console.log('Fetching device info from', `${API_BASE_URL}/devices/${deviceId}`);
-  const response = await fetch(`${API_BASE_URL}/devices/${deviceId}`, {
-    headers: getAuthHeaders()
-  });
+    // Debug: show the base URL being used
+
+    const response = await fetch(`${API_BASE_URL}/devices/${deviceId}`, {
+      headers: getAuthHeaders()
+    });
     if (!response.ok) {
       const errText = await response.text();
       console.error('Failed to fetch device info, status:', response.status, errText);
@@ -123,10 +124,10 @@ export async function getDeviceInfo(deviceId: string): Promise<DeviceInfo> {
   }
 }
 
-// Lấy lịch sử vị trí (cho timeline)
+// Get position history (for timeline)
 export async function getPositionHistory(
-  deviceId: string, 
-  startTime: number, 
+  deviceId: string,
+  startTime: number,
   endTime: number
 ): Promise<DevicePosition[]> {
   try {
@@ -142,15 +143,15 @@ export async function getPositionHistory(
   }
 }
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('firebase_token');
+function getAuthHeaders() {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('firebase_token') : null;
   return {
     'Content-Type': 'application/json',
     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
   };
-};
+}
 
-// Gửi cảnh báo
+// Send alert
 export async function sendAlert(deviceId: string, alertType: string, message: string) {
   try {
     const response = await fetch(`${API_BASE_URL}/alerts`, {
@@ -173,16 +174,13 @@ export interface AlertLog {
   timestamp: number;
 }
 
-// Lấy lịch sử các sự cố/cảnh báo
+// Get alerts history
 export async function getAlertsHistory(deviceId?: string): Promise<AlertLog[]> {
   try {
-    const url = deviceId 
+    const url = deviceId
       ? `${API_BASE_URL}/alerts?deviceId=${deviceId}`
       : `${API_BASE_URL}/alerts`;
-      
-    const response = await fetch(url, {
-      headers: getAuthHeaders()
-    });
+    const response = await fetch(url, { headers: getAuthHeaders() });
     if (!response.ok) throw new Error('Failed to fetch alerts history');
     return await response.json();
   } catch (error) {

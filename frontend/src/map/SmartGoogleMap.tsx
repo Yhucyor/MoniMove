@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { GoogleMap, useJsApiLoader, MarkerF, PolylineF } from '@react-google-maps/api';
 import { MapPin, Navigation, Layers, Shield, Gauge, Route, Clock, Locate, X, Plus, Minus } from 'lucide-react';
-import { getCurrentPosition, getDeviceRoute, getDeviceInfo } from '../services/api';
+import { getCurrentPosition, getDeviceRoute, getDeviceInfo, subscribeDevicePosition, subscribeDeviceRoute } from '../services/firebaseRealtime';
 import MapMarkers from './MapMarkers';
 import RouteLayer from './RouteLayer';
 import MapSearchBar from './MapSearchBar';
@@ -94,33 +94,41 @@ interface SmartGoogleMapProps {
 }
 
 export default function SmartGoogleMap({ showRoute = true, showSafeZone = true }: SmartGoogleMapProps) {
-  const deviceId = 'device-001';
+  const deviceId = 'DEVICE_ESP32_01';
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [center, setCenter] = useState(DEFAULT_CENTER);
-
   // Keep map centered on user's current location
+  const [userPosition, setUserPosition] = useState<google.maps.LatLngLiteral | null>(null);
   useEffect(() => {
     if (userPosition) {
       setCenter({ lat: userPosition.lat, lng: userPosition.lng });
     }
   }, [userPosition]);
   const [currentZoom, setCurrentZoom] = useState(DEFAULT_ZOOM);
-  const [currentPosition, setCurrentPosition] = useState<[number, number]>([10.7769, 106.7009]);
-  const [centerPosition, setCenterPosition] = useState<[number, number]>([10.7769, 106.7009]);
+  const [currentPosition, setCurrentPosition] = useState<[number, number] | null>(null);
+  const [centerPosition, setCenterPosition] = useState<[number, number] | null>(null);
   const [mapStyle, setMapStyle] = useState<keyof typeof MAP_STYLES>('standard');
   const [speed, setSpeed] = useState(45);
   const [storedPosition, setStoredPosition] = useState<[number, number] | null>(null);
   const [distance, setDistance] = useState(12.5);
   const [duration, setDuration] = useState('18 phút');
   const [showMapStyleMenu, setShowMapStyleMenu] = useState(false);
-  const [userPosition, setUserPosition] = useState<google.maps.LatLngLiteral | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchedPoi, setSearchedPoi] = useState<SearchResult | null>(null);
+  const [itineraryPois, setItineraryPois] = useState<DeviceMarker[]>([]);
+  const [backgroundPois, setBackgroundPois] = useState<DevicePosition[]>([]);
+  const [itineraryPoiIds, setItineraryPoiIds] = useState<Set<string>>(new Set());
+  const [waypoints, setWaypoints] = useState<[number, number][]>([]);
   const [userToDeviceRoute, setUserToDeviceRoute] = useState<google.maps.LatLngLiteral[]>([]);
   const [isLoadingUserRoute, setIsLoadingUserRoute] = useState(false);
   const [userRouteDistance, setUserRouteDistance] = useState<number | null>(null);
   const [userRouteDuration, setUserRouteDuration] = useState<string | null>(null);
-  const [waypoints, setWaypoints] = useState<[number, number][]>([]);
+  const safeZoneCircleRef = useRef<google.maps.Circle | null>(null);
 
-  // Auto-detect and track user position continuously if permission already granted
+  // Auto‑detect and track user position continuously if permission already granted
   useEffect(() => {
     let watchId: number;
     if (typeof window !== 'undefined' && navigator.geolocation) {
@@ -129,14 +137,9 @@ export default function SmartGoogleMap({ showRoute = true, showSafeZone = true }
         (err) => console.log('Initial location check failed:', err.message),
         { enableHighAccuracy: true, timeout: 5000 }
       );
-
       watchId = navigator.geolocation.watchPosition(
-        (pos) => {
-          setUserPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        },
-        (err) => {
-          console.log('Location watch error:', err.message);
-        },
+        (pos) => setUserPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (err) => console.log('Location watch error:', err.message),
         { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
       );
     }
@@ -150,142 +153,200 @@ export default function SmartGoogleMap({ showRoute = true, showSafeZone = true }
   // Fetch route from user to stored device location
   const fetchUserRoute = async () => {
     if (!userPosition || !storedPosition) return;
-
     setIsLoadingUserRoute(true);
     try {
       const start = `${userPosition.lng},${userPosition.lat}`;
       const end = `${storedPosition[1]},${storedPosition[0]}`;
       const url = `https://router.project-osrm.org/route/v1/driving/${start};${end}?overview=full&geometries=geojson`;
-      
       const response = await fetch(url);
       const data = await response.json();
-      
       if (data.code === 'Ok' && data.routes && data.routes[0]) {
         const routeObj = data.routes[0];
-        const coordinates = routeObj.geometry.coordinates.map(
-          (coord: [number, number]) => ({ lat: coord[1], lng: coord[0] })
-        );
+        const coordinates = routeObj.geometry.coordinates.map((c: [number, number]) => ({ lat: c[1], lng: c[0] }));
         setUserToDeviceRoute(coordinates);
-
-        if (routeObj.distance) {
-          setUserRouteDistance(routeObj.distance / 1000);
-        }
+        if (routeObj.distance) setUserRouteDistance(routeObj.distance / 1000);
         if (routeObj.duration) {
           const mins = Math.round(routeObj.duration / 60);
           if (mins >= 60) {
             const hrs = Math.floor(mins / 60);
-            const remainingMins = mins % 60;
-            setUserRouteDuration(`${hrs}h ${remainingMins}p`);
+            const remaining = mins % 60;
+            setUserRouteDuration(`${hrs}h ${remaining}p`);
           } else {
             setUserRouteDuration(`${mins} phút`);
           }
         }
       }
-    } catch (error) {
-      console.error('Error fetching user route:', error);
+    } catch (e) {
+      console.error('Error fetching user route:', e);
     } finally {
       setIsLoadingUserRoute(false);
     }
   };
-  
-  // Search state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchedPoi, setSearchedPoi] = useState<SearchResult | null>(null);
 
-  // Device markers state
-  const [itineraryPois, setItineraryPois] = useState<DeviceMarker[]>([]);
-  const [backgroundPois, setBackgroundPois] = useState<DevicePosition[]>([]);
-  const [itineraryPoiIds, setItineraryPoiIds] = useState<Set<string>>(new Set());
+  // Auto‑detect user position on mount (fallback)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (err) => console.log('Silent auto‑location check skipped:', err.message),
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    }
+  }, []);
 
-  const safeZoneCircleRef = useRef<google.maps.Circle | null>(null);
+  // Fetch route between user and device when positions change
+  useEffect(() => {
+    if (!userPosition || !currentPosition) {
+      setUserToDeviceRoute([]);
+      setUserRouteDistance(null);
+      setUserRouteDuration(null);
+      return;
+    }
+    const load = async () => {
+      setIsLoadingUserRoute(true);
+      try {
+        const start = `${userPosition.lng},${userPosition.lat}`;
+        const end = `${currentPosition[1]},${currentPosition[0]}`;
+        const url = `https://router.project-osrm.org/route/v1/driving/${start};${end}?overview=full&geometries=geojson`;
+        const resp = await fetch(url);
+        const data = await resp.json();
+        if (data.code === 'Ok' && data.routes && data.routes[0]) {
+          const routeObj = data.routes[0];
+          const coordinates = routeObj.geometry.coordinates.map((c: [number, number]) => ({ lat: c[1], lng: c[0] }));
+          setUserToDeviceRoute(coordinates);
+          if (routeObj.distance) setUserRouteDistance(routeObj.distance / 1000);
+          if (routeObj.duration) {
+            const mins = Math.round(routeObj.duration / 60);
+            if (mins >= 60) {
+              const hrs = Math.floor(mins / 60);
+              const remaining = mins % 60;
+              setUserRouteDuration(`${hrs}h ${remaining}p`);
+            } else {
+              setUserRouteDuration(`${mins} phút`);
+            }
+          }
+        } else {
+          setUserToDeviceRoute([userPosition, { lat: currentPosition[0], lng: currentPosition[1] }]);
+        }
+      } catch (e) {
+        console.error('Error fetching user route:', e);
+        setUserToDeviceRoute([userPosition, { lat: currentPosition[0], lng: currentPosition[1] }]);
+      } finally {
+        setIsLoadingUserRoute(false);
+      }
+    };
+    load();
+  }, [userPosition, currentPosition]);
+
+  // Search handling
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setSearchLoading(true);
+    const timer = setTimeout(() => {
+      const results = itineraryPois
+        .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        .map(p => ({ id: p.id, name: p.name, lat: p.lat, lng: p.lng, category: p.category || 'device' } as SearchResult));
+      setSearchResults(results);
+      setSearchLoading(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, itineraryPois]);
 
   // Load device data
   useEffect(() => {
-    const fetchData = async () => {
+    const load = async () => {
       try {
-        const deviceInfo = await getDeviceInfo(deviceId);
-        console.log('Device info:', deviceInfo);
+        let deviceInfo: any = null;
+        try {
+          deviceInfo = await getDeviceInfo(deviceId);
+        } catch (e) {
+          console.warn('Could not fetch device info:', e);
+        }
 
-        const position = await getCurrentPosition(deviceId);
-        setCurrentPosition([position.lat, position.lng]);
-        setCenterPosition([position.lat, position.lng]);
-        if (position.speed) setSpeed(position.speed);
+        const pos = await getCurrentPosition(deviceId);
+        const latVal = pos?.lat ?? deviceInfo?.current_data?.gps?.latitude ?? DEFAULT_CENTER.lat;
+        const lngVal = pos?.lng ?? deviceInfo?.current_data?.gps?.longitude ?? DEFAULT_CENTER.lng;
+        const speedVal = pos?.speed ?? deviceInfo?.current_data?.speed ?? 0;
 
-        // Extract stored location from Firebase (gps data)
-        const gps = deviceInfo.current_data?.gps;
+        setCurrentPosition([latVal, lngVal]);
+        setCenterPosition([latVal, lngVal]);
+        setSpeed(speedVal);
+
+        const gps = deviceInfo?.current_data?.gps;
         if (gps) {
-          const storedPos: [number, number] = [gps.latitude, gps.longitude];
-          setStoredPosition(storedPos);
+          setStoredPosition([gps.latitude, gps.longitude] as [number, number]);
+        } else {
+          setStoredPosition([latVal, lngVal]);
         }
 
         const deviceMarker: DeviceMarker = {
           id: deviceId,
-          name: 'MoniMove - 01',
-          lat: position.lat,
-          lng: position.lng,
+          name: deviceInfo?.name || 'MoniMove - 01',
+          lat: latVal,
+          lng: lngVal,
           category: 'device',
-          speed: position.speed,
-          status: 'active',
+          speed: speedVal,
+          status: deviceInfo?.status || 'active',
           lastUpdate: new Date().toLocaleTimeString('vi-VN'),
           originalIndex: 0,
         };
 
-        const route = await getDeviceRoute(deviceId);
-        setWaypoints(route.waypoints);
-        if (route.distance) setDistance(route.distance / 1000);
-        if (route.duration) setDuration(`${Math.round(route.duration / 60)} phút`);
-
-        const routeMarkers: DeviceMarker[] = route.waypoints.map((point, index) => ({
-          id: `waypoint-${index}`,
-          name: index === 0 ? 'Điểm xuất phát' : 
-                index === route.waypoints.length - 1 ? 'Điểm đến' : 
-                `Điểm ${index}`,
-          lat: point[0],
-          lng: point[1],
-          category: index === 0 ? 'device' : 
-                    index === route.waypoints.length - 1 ? 'destination' : 
-                    'checkpoint',
-          originalIndex: index,
-        }));
+        let routeMarkers: DeviceMarker[] = [];
+        try {
+          const route = await getDeviceRoute(deviceId);
+          if (route && route.waypoints) {
+            setWaypoints(route.waypoints);
+            if (route.distance) setDistance(route.distance / 1000);
+            if (route.duration) setDuration(`${Math.round(route.duration / 60)} phút`);
+            routeMarkers = route.waypoints.map((pt: [number, number], idx: number) => ({
+              id: `waypoint-${idx}`,
+              name: idx === 0 ? 'Start' : idx === route.waypoints.length - 1 ? 'End' : `Point ${idx}`,
+              lat: pt[0],
+              lng: pt[1],
+              category: idx === 0 ? 'device' : idx === route.waypoints.length - 1 ? 'destination' : 'checkpoint',
+              originalIndex: idx,
+            }));
+          }
+        } catch (e) {
+          console.warn('Could not fetch device route:', e);
+        }
 
         setItineraryPois([deviceMarker, ...routeMarkers]);
         setItineraryPoiIds(new Set([deviceId, ...routeMarkers.map(m => m.id)]));
-      } catch (error) {
-        console.error('Error fetching data:', error);
+      } catch (e) {
+        console.error('Error fetching data:', e);
       }
     };
+    load();
 
-    fetchData();
+    // Subscribe to realtime position updates
+    const unsubPos = subscribeDevicePosition(deviceId, (pos) => {
+      setCurrentPosition([pos.lat, pos.lng]);
+      setCenterPosition([pos.lat, pos.lng]);
+      if (pos.speed) setSpeed(pos.speed);
+      setItineraryPois(prev => prev.map(p => p.id === deviceId ? { ...p, lat: pos.lat, lng: pos.lng, speed: pos.speed } : p));
+    });
 
-    const interval = setInterval(async () => {
-      try {
-        const position = await getCurrentPosition(deviceId);
-        setCurrentPosition([position.lat, position.lng]);
-        if (position.speed) setSpeed(position.speed);
-        
-        setItineraryPois(prev => prev.map(poi => 
-          poi.id === deviceId 
-            ? { ...poi, lat: position.lat, lng: position.lng, speed: position.speed }
-            : poi
-        ));
-      } catch (error) {
-        console.error('Error updating position:', error);
-      }
-    }, 5000);
+    // Subscribe to realtime route updates
+    const unsubRoute = subscribeDeviceRoute(deviceId, (route) => {
+      setWaypoints(route.waypoints);
+      if (route.distance) setDistance(route.distance / 1000);
+      if (route.duration) setDuration(`${Math.round(route.duration / 60)} phút`);
+    });
 
-    return () => clearInterval(interval);
+    return () => {
+      unsubPos();
+      unsubRoute();
+    };
   }, [deviceId]);
 
-  // Update safe zone circle
+  // Update safe‑zone circle
   useEffect(() => {
     if (map && showSafeZone) {
-      if (safeZoneCircleRef.current) {
-        safeZoneCircleRef.current.setMap(null);
-      }
-      
+      if (safeZoneCircleRef.current) safeZoneCircleRef.current.setMap(null);
       const circle = new google.maps.Circle({
         strokeColor: '#00b494',
         strokeOpacity: 0.8,
@@ -293,16 +354,14 @@ export default function SmartGoogleMap({ showRoute = true, showSafeZone = true }
         fillColor: '#00b494',
         fillOpacity: 0.1,
         map,
-        center: { lat: currentPosition[0], lng: currentPosition[1] },
+        center: currentPosition ? { lat: currentPosition[0], lng: currentPosition[1] } : { lat: 0, lng: 0 },
         radius: 500,
       });
-      
       safeZoneCircleRef.current = circle;
     } else if (safeZoneCircleRef.current) {
       safeZoneCircleRef.current.setMap(null);
       safeZoneCircleRef.current = null;
     }
-
     return () => {
       if (safeZoneCircleRef.current) {
         safeZoneCircleRef.current.setMap(null);
@@ -314,14 +373,12 @@ export default function SmartGoogleMap({ showRoute = true, showSafeZone = true }
   const onLoad = useCallback((map: google.maps.Map) => {
     setMap(map);
     map.addListener('zoom_changed', () => {
-      const zoom = map.getZoom();
-      if (zoom) setCurrentZoom(zoom);
+      const z = map.getZoom();
+      if (z) setCurrentZoom(z);
     });
   }, []);
 
-  const onUnmount = useCallback(() => {
-    setMap(null);
-  }, []);
+  const onUnmount = useCallback(() => setMap(null), []);
 
   const handleSelectPoi = (poi: SearchResult) => {
     setSearchedPoi(poi);
@@ -337,24 +394,25 @@ export default function SmartGoogleMap({ showRoute = true, showSafeZone = true }
   };
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+  const { isLoaded, loadError } = useJsApiLoader({ id: 'google-map-script', googleMapsApiKey: apiKey, libraries });
 
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: apiKey,
-    libraries,
-  });
-
-  if (!apiKey || apiKey === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
+  if (!apiKey) return null;
+  if (loadError) {
     return (
-      <div className="absolute inset-0 bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center">
-        <div className="text-center max-w-md p-8 bg-white rounded-2xl shadow-2xl">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <MapPin className="w-8 h-8 text-red-600" />
-          </div>
-          <h3 className="text-xl font-bold text-slate-900 mb-2">Google Maps API Key Required</h3>
-          <p className="text-slate-600 mb-4">
-            Vui lòng thêm Google Maps API key vào file <code className="bg-slate-100 px-2 py-1 rounded">.env.local</code>
-          </p>
+      <div className="absolute inset-0 bg-red-50 flex items-center justify-center p-4">
+        <div className="text-center bg-white p-6 rounded-xl shadow-lg max-w-sm border border-red-100">
+          <p className="text-red-600 font-bold">Lỗi tải bản đồ Google Maps</p>
+          <p className="text-xs text-slate-500 mt-2">{loadError.message}</p>
+        </div>
+      </div>
+    );
+  }
+  if (!isLoaded) {
+    return (
+      <div className="absolute inset-0 bg-slate-50 flex items-center justify-center">
+        <div className="text-center animate-pulse">
+          <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600 font-semibold">Đang tải bản đồ...</p>
         </div>
       </div>
     );
@@ -377,13 +435,18 @@ export default function SmartGoogleMap({ showRoute = true, showSafeZone = true }
           clickableIcons: false,
         }}
       >
-        {showRoute && userToDeviceRoute.length > 0 && (
+        {/* Route Layer */}
+        {showRoute && (
+          userToDeviceRoute.length > 0 ? (
             <>
-              <PolylineF path={userToDeviceRoute} options={{ strokeColor: '#047857', strokeOpacity: 0.4, strokeWeight: 8 }} />
-              <PolylineF path={userToDeviceRoute} options={{ strokeColor: '#10b981', strokeOpacity: 0.9, strokeWeight: 5 }} />
+              <PolylineF path={userToDeviceRoute} options={{ strokeColor: '#047857', strokeOpacity: 0.4, strokeWeight: 8, geodesic: true }} />
+              <PolylineF path={userToDeviceRoute} options={{ strokeColor: '#10b981', strokeOpacity: 0.9, strokeWeight: 5, geodesic: true }} />
             </>
+          ) : (
+            <RouteLayer itineraryPois={itineraryPois} />
+          )
         )}
-
+        {/* Markers */}
         <MapMarkers
           currentZoom={currentZoom}
           backgroundPois={backgroundPois}
@@ -394,25 +457,22 @@ export default function SmartGoogleMap({ showRoute = true, showSafeZone = true }
           isRainy={false}
           currency="VND"
         />
-
-        {userPosition && storedPosition && (
-          <>
-            <MarkerF
-              position={userPosition}
-              icon={{
-                  path: window.google.maps.SymbolPath.CIRCLE,
-                  fillColor: '#3b82f6',
-                  fillOpacity: 1,
-                  strokeColor: '#ffffff',
-                  strokeWeight: 3,
-                  scale: 8,
-                }}
-              title="Vị trí của bạn"
-            />
-          </>
-        )}</GoogleMap>
-
-      {/* Search Bar */}
+        {/* User Location Marker */}
+        {userPosition && (
+          <MarkerF
+            position={userPosition}
+            icon={window?.google?.maps?.SymbolPath ? {
+              path: window.google.maps.SymbolPath.CIRCLE,
+              fillColor: '#3b82f6',
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 3,
+              scale: 8,
+            } : undefined}
+            title="Vị trí của bạn"
+          />
+        )}
+      </GoogleMap>
       <MapSearchBar
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -423,7 +483,6 @@ export default function SmartGoogleMap({ showRoute = true, showSafeZone = true }
         handleSelectPoi={handleSelectPoi}
         setSearchedPoi={setSearchedPoi}
       />
-
       {isLoadingUserRoute && (
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[2000] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-4">
           <div className="flex items-center gap-3">
@@ -432,230 +491,91 @@ export default function SmartGoogleMap({ showRoute = true, showSafeZone = true }
           </div>
         </div>
       )}
-
-
-
-      {/* Map Style Toggle Selector */}
-      <div 
-        className="absolute top-4 right-4 z-[1000] w-10 h-10"
-        onMouseEnter={() => setShowMapStyleMenu(true)}
-        onMouseLeave={() => setShowMapStyleMenu(false)}
-      >
-        <button
-          onClick={() => setShowMapStyleMenu(!showMapStyleMenu)}
-          className={`absolute top-0 right-0 w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 border ${
-            showMapStyleMenu
-              ? 'opacity-0 scale-75 rotate-90 pointer-events-none'
-              : 'opacity-100 scale-100 rotate-0 pointer-events-auto bg-white/95 backdrop-blur-md text-slate-700 border-slate-200/80 hover:bg-slate-50'
-          }`}
-          title="Chọn kiểu bản đồ"
-        >
+      {/* Map Style Toggle */}
+      <div className="absolute top-4 right-4 z-[1000] w-10 h-10" onMouseEnter={() => setShowMapStyleMenu(true)} onMouseLeave={() => setShowMapStyleMenu(false)}>
+        <button onClick={() => setShowMapStyleMenu(!showMapStyleMenu)} className={`absolute top-0 right-0 w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 border ${showMapStyleMenu ? 'opacity-0 scale-75 rotate-90 pointer-events-none' : 'opacity-100 scale-100 rotate-0 pointer-events-auto bg-white/95 backdrop-blur-md text-slate-700 border-slate-200/80 hover:bg-slate-50'}`} title="Chọn kiểu bản đồ">
           <Layers className="w-4 h-4" />
         </button>
-
-        <div className={`absolute top-0 right-0 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-slate-200/40 p-1.5 w-28 transition-all duration-300 ease-out origin-top-right ${
-          showMapStyleMenu 
-            ? 'opacity-100 scale-100 pointer-events-auto visible' 
-            : 'opacity-0 scale-90 pointer-events-none invisible'
-        }`}>
+        <div className={`absolute top-0 right-0 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-slate-200/40 p-1.5 w-28 transition-all duration-300 ease-out origin-top-right ${showMapStyleMenu ? 'opacity-100 scale-100 pointer-events-auto visible' : 'opacity-0 scale-90 pointer-events-none invisible'}`}>
           <div className="px-2 py-1 border-b border-slate-100 mb-1">
             <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400">Kiểu bản đồ</span>
           </div>
           <div className="space-y-0.5">
-            {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((style) => (
-              <button
-                key={style}
-                onClick={() => {
-                  setMapStyle(style);
-                  setShowMapStyleMenu(false);
-                }}
-                className={`w-full text-left px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-all duration-200 capitalize ${
-                  mapStyle === style
-                    ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
-                }`}
-              >
-                {style}
-              </button>
+            {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map(style => (
+              <button key={style} onClick={() => { setMapStyle(style); setShowMapStyleMenu(false); }} className={`w-full text-left px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-all duration-200 capitalize ${mapStyle === style ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'}`}>{style}</button>
             ))}
           </div>
         </div>
       </div>
-
-
-
-      {/* Floating Map Controls (Locate & Zoom) */}
+      {/* Floating Controls */}
       <div className="absolute bottom-6 right-4 z-[1000] flex flex-col gap-1.5">
-        {/* Locate Button */}
-        <button
-          onClick={() => {
-            const handleSuccess = (pos: GeolocationPosition) => {
-              const userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-              setUserPosition(userCoords);
-              map?.panTo(userCoords);
-              map?.setZoom(16);
-            };
-
-            const handleFallback = () => {
-              console.warn('Browser geolocation failed or blocked, trying IP fallback...');
-              fetch('https://ipapi.co/json/')
-                .then(res => res.json())
-                .then(data => {
-                  if (data.latitude && data.longitude) {
-                    const userCoords = { lat: data.latitude, lng: data.longitude };
-                    setUserPosition(userCoords);
-                    map?.panTo(userCoords);
-                    map?.setZoom(15);
-                  } else {
-                    alert('Không thể xác định vị trí của bạn. Vui lòng bật định vị trên trình duyệt.');
-                  }
-                })
-                .catch(() => {
+        <button onClick={() => {
+          const success = (pos: GeolocationPosition) => {
+            const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            setUserPosition(coords);
+            map?.panTo(coords);
+            map?.setZoom(16);
+          };
+          const fallback = () => {
+            console.warn('Geolocation failed, using IP fallback');
+            fetch('https://ipapi.co/json/')
+              .then(r => r.json())
+              .then(d => {
+                if (d.latitude && d.longitude) {
+                  const coords = { lat: d.latitude, lng: d.longitude };
+                  setUserPosition(coords);
+                  map?.panTo(coords);
+                  map?.setZoom(15);
+                } else {
                   alert('Không thể xác định vị trí của bạn. Vui lòng bật định vị trên trình duyệt.');
-                });
-            };
-
-            if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(handleSuccess, handleFallback, {
-                enableHighAccuracy: true,
-                timeout: 5000
-              });
-            } else {
-              handleFallback();
-            }
-          }}
-          className="w-8 h-8 bg-white/95 backdrop-blur-md rounded-lg shadow-md border border-slate-200/50 flex items-center justify-center text-slate-700 hover:text-blue-600 hover:bg-slate-50 transition-all duration-200 active:scale-95 cursor-pointer"
-          title="Định vị của bạn"
-        >
+                }
+              })
+              .catch(() => alert('Không thể xác định vị trí của bạn. Vui lòng bật định vị trên trình duyệt.'));
+          };
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(success, fallback, { enableHighAccuracy: true, timeout: 5000 });
+          } else {
+            fallback();
+          }
+        }} className="w-8 h-8 bg-white/95 backdrop-blur-md rounded-lg shadow-md border border-slate-200/50 flex items-center justify-center text-slate-700 hover:text-blue-600 hover:bg-slate-50 transition-all duration-200 active:scale-95 cursor-pointer" title="Định vị của bạn">
           <Locate className="w-4 h-4 text-blue-600" />
         </button>
-
-        {/* Zoom Controls */}
         <div className="flex flex-col bg-white/95 backdrop-blur-md rounded-lg shadow-md border border-slate-200/50 overflow-hidden">
-          <button
-            onClick={() => {
-              if (map) {
-                const zoom = map.getZoom() || DEFAULT_ZOOM;
-                map.setZoom(zoom + 1);
-              }
-            }}
-            className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
-            title="Phóng to"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-          
-          <div className="h-px bg-slate-200/60 mx-1.5"></div>
-          
-          <button
-            onClick={() => {
-              if (map) {
-                const zoom = map.getZoom() || DEFAULT_ZOOM;
-                map.setZoom(zoom - 1);
-              }
-            }}
-            className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
-            title="Thu nhỏ"
-          >
-            <Minus className="w-3.5 h-3.5" />
-          </button>
+          <button onClick={() => map && map.setZoom((map.getZoom() || DEFAULT_ZOOM) + 1)} className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer" title="Phóng to"><Plus className="w-3.5 h-3.5" /></button>
+          <div className="h-px bg-slate-200/60 mx-1.5" />
+          <button onClick={() => map && map.setZoom((map.getZoom() || DEFAULT_ZOOM) - 1)} className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer" title="Thu nhỏ"><Minus className="w-3.5 h-3.5" /></button>
         </div>
       </div>
-
-      {/* Bottom Center - Directions & Travel Info Dashboard */}
+      {/* Bottom Dashboard */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-2xl px-4 pointer-events-none">
         <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200/50 p-4 pointer-events-auto transition-all duration-300 relative">
-          {userPosition ? (
+          {userPosition && (
             <>
-              {/* Stop Navigation Button */}
-              <button
-                onClick={() => {
-                  setUserPosition(null);
-                  setUserToDeviceRoute([]);
-                  setUserRouteDistance(null);
-                  setUserRouteDuration(null);
-                }}
-                className="absolute top-2 right-2 p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50/80 transition-all duration-200 pointer-events-auto cursor-pointer"
-                title="Dừng dẫn đường"
-              >
-                <X className="w-4 h-4" />
-              </button>
-
+              <button onClick={() => { setUserPosition(null); setUserToDeviceRoute([]); setUserRouteDistance(null); setUserRouteDuration(null); }} className="absolute top-2 right-2 p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50/80 transition-all duration-200 pointer-events-auto cursor-pointer" title="Dừng dẫn đường"><X className="w-4 h-4" /></button>
               <div className="flex items-center justify-between gap-6 pr-4">
-                
-                {/* Departure - User Position */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping"></div>
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-600">Vị trí của bạn</span>
-                  </div>
+                  <div className="flex items-center gap-2 mb-1.5"><div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping" /><span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-600">Vị trí của bạn</span></div>
                   <p className="text-xs font-bold text-slate-800 truncate">Vị trí hiện tại</p>
-                  <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-                    {userPosition.lat.toFixed(5)}°N, {userPosition.lng.toFixed(5)}°E
-                  </p>
+                  <p className="text-[11px] text-slate-500 font-mono mt-0.5">{userPosition.lat.toFixed(5)}°N, {userPosition.lng.toFixed(5)}°E</p>
                 </div>
-
-                {/* Travel Statistics - Middle */}
                 <div className="flex flex-col items-center justify-center px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100 min-w-[180px]">
                   {userRouteDistance !== null && userRouteDuration !== null ? (
                     <>
-                      <div className="flex items-center gap-1 mb-0.5">
-                        <Navigation className="w-3.5 h-3.5 text-cyan-600 animate-pulse" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Đến chỗ nạn nhân</span>
-                      </div>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-lg font-black text-cyan-600">{userRouteDistance.toFixed(1)}</span>
-                        <span className="text-[10px] font-bold text-cyan-600">km</span>
-                        <span className="mx-1 text-slate-300">•</span>
-                        <span className="text-sm font-black text-orange-500">{userRouteDuration}</span>
-                      </div>
-                      <div className="w-full bg-slate-200 h-[3px] rounded-full mt-2 overflow-hidden relative">
-                        <div className="bg-gradient-to-r from-blue-500 to-cyan-500 h-full rounded-full w-2/3 animate-pulse" style={{ animationDuration: '2s' }}></div>
-                      </div>
+                      <div className="flex items-center gap-1 mb-0.5"><Navigation className="w-3.5 h-3.5 text-cyan-600 animate-pulse" /><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Đến chỗ nạn nhân</span></div>
+                      <div className="flex items-baseline gap-1"><span className="text-lg font-black text-cyan-600">{userRouteDistance.toFixed(1)}</span><span className="text-[10px] font-bold text-cyan-600">km</span><span className="mx-1 text-slate-300">•</span><span className="text-sm font-black text-orange-500">{userRouteDuration}</span></div>
+                      <div className="w-full bg-slate-200 h-[3px] rounded-full mt-2 overflow-hidden"><div className="bg-gradient-to-r from-blue-500 to-cyan-500 h-full rounded-full w-2/3 animate-pulse" style={{ animationDuration: '2s' }} /></div>
                     </>
                   ) : (
-                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                      <div className="w-3 h-3 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-                      Tính toán đường đi...
-                    </div>
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-500"><div className="w-3 h-3 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />Tính toán đường đi...</div>
                   )}
                 </div>
-
-                {/* Destination - IoT Device */}
-                <div className="flex-1 min-w-0 text-right pr-2">
-                  <div className="flex items-center justify-end gap-2 mb-1.5">
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#00b494]">Vị trí nạn nhân</span>
-                    <div className="w-2.5 h-2.5 bg-[#00b494] rounded-full animate-pulse"></div>
-                  </div>
-                  <p className="text-xs font-bold text-slate-800 truncate">Nạn nhân (MoniMove)</p>
-                  <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-                    {currentPosition.lat.toFixed(5)}°N, {currentPosition.lng.toFixed(5)}°E
-                  </p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1.5"><MapPin className="w-3.5 h-3.5 text-emerald-600" /><span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-600">Thiết bị</span></div>
+                  <p className="text-xs font-bold text-slate-800 truncate">Thiết bị đang theo dõi</p>
+                  <p className="text-[11px] text-slate-500 font-mono mt-0.5">{currentPosition ? `${currentPosition[0].toFixed(5)}°N, ${currentPosition[1].toFixed(5)}°E` : 'Đang tải...'}</p>
                 </div>
-
               </div>
             </>
-          ) : (
-            <div className="flex items-center justify-between gap-4 py-1">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shadow-inner">
-                  <Navigation className="w-5 h-5 animate-bounce" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-800">Bắt đầu dẫn đường cứu nạn</h4>
-                  <p className="text-xs text-slate-500 mt-0.5">Vui lòng định vị vị trí hiện tại của bạn để hiển thị lộ trình và khoảng cách cứu nạn.</p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  const locateButton = document.querySelector('[title="Định vị của bạn"]') as HTMLButtonElement;
-                  if (locateButton) locateButton.click();
-                }}
-                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:brightness-105 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md transition-all whitespace-nowrap cursor-pointer"
-              >
-                📍 Định vị ngay
-              </button>
-            </div>
           )}
         </div>
       </div>
