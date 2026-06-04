@@ -27,7 +27,7 @@ export class FirebaseService implements OnModuleInit {
     return this.rtdb;
   }
 
-  async verifyIdToken(token: string) {
+  public async verifyIdToken(token: string): Promise<admin.auth.DecodedIdToken> {
     try {
       return await admin.auth().verifyIdToken(token);
     } catch (error) {
