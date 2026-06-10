@@ -549,5 +549,63 @@ Kiểm tra:
 
 ---
 
-_README được cập nhật lần cuối: 28/05/2026_
+# 🔐 Authentication System (Updated)
+
+## Hệ Thống Đăng Nhập Đã Được Sửa
+
+Hệ thống authentication đã được cập nhật và sửa lỗi hoàn toàn. Không còn sử dụng dữ liệu giả, tất cả dữ liệu đều được lưu trực tiếp vào Firebase Firestore.
+
+### Các Phương Thức Đăng Nhập
+
+1. **Email & Password**
+   - Đăng ký tài khoản mới
+   - Đăng nhập với email/password
+   - Validation & error handling
+
+2. **Google OAuth**
+   - Đăng nhập nhanh bằng Google
+   - Tự động tạo user record
+
+### Authentication Flow
+
+```text
+User Input → Firebase Auth → ID Token → Backend Verify → Firestore User Record → Login Success
+```
+
+### User Roles
+
+- **user** (default): Quyền cơ bản
+- **admin**: Quyền quản trị (set manually in Firestore)
+
+### Quick Start Authentication
+
+```bash
+# 1. Chạy Backend
+cd backend
+npm run start:dev
+
+# 2. Chạy Frontend
+cd frontend  
+npm run dev
+
+# 3. Truy cập http://localhost:3000
+# 4. Click "Đăng nhập" và test authentication
+```
+
+### Documents
+
+- **[QUICKSTART.md](./QUICKSTART.md)** - Hướng dẫn nhanh trong 3 bước
+- **[SETUP_GUIDE.md](./SETUP_GUIDE.md)** - Hướng dẫn chi tiết đầy đủ
+- **[FIX_SUMMARY.md](./FIX_SUMMARY.md)** - Tổng hợp lỗi đã sửa & troubleshooting
+
+### Development Tools
+
+**Backend Status Indicator** (chỉ trong development mode)
+- Hiển thị ở góc phải dưới màn hình
+- 🟢 Green = Backend online
+- 🔴 Red = Backend offline + hướng dẫn khởi động
+
+---
+
+_README được cập nhật lần cuối: 10/06/2026_
 

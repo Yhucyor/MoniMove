@@ -4,6 +4,8 @@ import dynamic from 'next/dynamic';
 import { subscribeDevicePosition, subscribeDeviceRoute } from '../services/firebaseRealtime';
 import { useMemo, useState, useEffect } from 'react';
 import { getCurrentPosition } from '../services/firebaseRealtime';
+import MapSearchBar from './MapSearchBar';
+import { SearchResult } from './types';
 
 // Import required icons
 import {
@@ -70,6 +72,13 @@ export default function MapComponent({ showRoute = true, showSafeZone = true }: 
   const deviceId = 'DEVICE_ESP32_01';
   const [centerPosition, setCenterPosition] = useState<[number, number]>([10.7769, 106.7009]);
 
+  // Search states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchedPoi, setSearchedPoi] = useState<SearchResult | null>(null);
+
   const [mapStyle, setMapStyle] = useState<keyof typeof MAP_STYLES>('standard');
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
   const [isLoadingRoute, setIsLoadingRoute] = useState(false);
@@ -87,7 +96,7 @@ export default function MapComponent({ showRoute = true, showSafeZone = true }: 
   const [userRouteDistance, setUserRouteDistance] = useState<number | null>(null);
   const [userRouteDuration, setUserRouteDuration] = useState<string | null>(null);
 
-  // Detect danger: high speed triggers red border
+  // Detect danger: high speed or critical alerts triggers red border
   useEffect(() => {
     if (speed > 80) {
       setIsDanger(true);
@@ -237,6 +246,50 @@ export default function MapComponent({ showRoute = true, showSafeZone = true }: 
     };
   }, []);
 
+  // Search functionality
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    const searchTimer = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        // Search using Nominatim API (OpenStreetMap)
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5`
+        );
+        const data = await response.json();
+        
+        const results: SearchResult[] = data.map((item: any) => ({
+          id: item.place_id.toString(),
+          name: item.display_name,
+          category: item.type || 'location',
+          lat: parseFloat(item.lat),
+          lng: parseFloat(item.lon),
+        }));
+
+        setSearchResults(results);
+      } catch (error) {
+        console.error('Search error:', error);
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(searchTimer);
+  }, [searchQuery]);
+
+  const handleSelectPoi = (poi: SearchResult) => {
+    setSearchedPoi(poi);
+    setShowDropdown(false);
+    if (mapInstance) {
+      mapInstance.flyTo([poi.lat, poi.lng], 16, { duration: 1.5 });
+    }
+  };
+
   const customIcon = useMemo(() => {
     if (typeof window !== 'undefined') {
       return L.divIcon({
@@ -299,7 +352,22 @@ export default function MapComponent({ showRoute = true, showSafeZone = true }: 
   const userArrowMarkers = useArrowMarkers(userToDeviceRoute);
 
   return (
-    <div className={`absolute inset-0 ${isDanger ? 'border-4 border-red-500' : ''}`}> {/* Danger border applied here */}
+    <div className="absolute inset-0">
+      {isDanger && (
+        <div className="absolute inset-0 pointer-events-none z-[1000] danger-border-animation" />
+      )}
+      {/* Map Search Bar */}
+      <MapSearchBar
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        showDropdown={showDropdown}
+        setShowDropdown={setShowDropdown}
+        searchResults={searchResults}
+        searchLoading={searchLoading}
+        handleSelectPoi={handleSelectPoi}
+        setSearchedPoi={setSearchedPoi}
+      />
+
       <MapContainer
         center={centerPosition}
         zoom={13}

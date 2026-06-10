@@ -16,19 +16,14 @@ export class FirebaseAuthGuard implements CanActivate {
     }
 
     const token = authHeader.split(' ')[1];
-    if (token === 'mock-admin-token') {
-      request.user = { uid: 'mock-admin', email: 'admin@monimove.local', email_verified: true };
-      return true;
-    }
 
     try {
       const decodedToken = await this.firebaseService.verifyIdToken(token);
       request.user = decodedToken; // Lưu thông tin user để các controller sử dụng nếu cần
       return true;
     } catch (error) {
-      this.logger.warn(`Xác thực token thất bại: ${error.message || error}. Bỏ qua xác thực để hỗ trợ chạy thử local (Dev Mode Bypass).`);
-      request.user = { uid: 'dev-bypass-user', email: 'dev@monimove.local', email_verified: true };
-      return true;
+      this.logger.error(`Xác thực token thất bại: ${error.message || error}`);
+      throw new UnauthorizedException('Token xác thực không hợp lệ hoặc đã hết hạn');
     }
   }
 }

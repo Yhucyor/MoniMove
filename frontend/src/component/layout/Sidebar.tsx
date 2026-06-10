@@ -1,4 +1,5 @@
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { LayoutDashboard, Cpu, Settings, Info, LogOut, User, AlertTriangle } from 'lucide-react';
 
 interface SidebarProps {
@@ -10,6 +11,20 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose, activeTab, onTabChange }: SidebarProps) {
   const router = useRouter();
+
+  const [userName, setUserName] = useState('Người dùng');
+  const [userRole, setUserRole] = useState('User');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedName = localStorage.getItem('user_name');
+      const storedRole = localStorage.getItem('user_role');
+      if (storedName) setUserName(storedName);
+      if (storedRole) {
+        setUserRole(storedRole.charAt(0).toUpperCase() + storedRole.slice(1));
+      }
+    }
+  }, []);
 
   const menuItems = [
     { id: 'monitor', label: 'Giám sát', icon: LayoutDashboard },
@@ -150,8 +165,8 @@ export default function Sidebar({ isOpen, onClose, activeTab, onTabChange }: Sid
             <User className="h-4 w-4" />
           </div>
           <div className="flex min-w-0 flex-col">
-            <span className="truncate text-[11px] font-bold text-slate-800">Nguyễn Trọng Thức</span>
-            <span className="text-[8px] font-semibold uppercase tracking-wider text-slate-500">Admin</span>
+            <span className="truncate text-[11px] font-bold text-slate-800">{userName}</span>
+            <span className="text-[8px] font-semibold uppercase tracking-wider text-slate-500">{userRole}</span>
           </div>
         </div>
 

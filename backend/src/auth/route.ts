@@ -1,0 +1,1 @@
+// Redundant Next.js route deactivated. NestJS controller is implemented in auth.controller.ts instead.

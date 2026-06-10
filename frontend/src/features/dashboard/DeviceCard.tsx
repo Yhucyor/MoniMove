@@ -1,4 +1,4 @@
-import { MapPin, Navigation, Rotate3D, Activity, Satellite, Battery, ShieldAlert, ShieldCheck, Clock, ExternalLink } from 'lucide-react';
+import { MapPin, Navigation, Rotate3D, Activity, Satellite, Battery, ShieldAlert, ShieldCheck, Clock } from 'lucide-react';
 import { DeviceInfo } from '../../services/api';
 
 interface DeviceCardProps {
@@ -62,16 +62,6 @@ export default function DeviceCard({ device }: DeviceCardProps) {
             <h4 className="flex items-center text-xs font-bold text-cyan-800 uppercase tracking-wider">
               <MapPin className="mr-1.5 h-4 w-4 text-cyan-600" /> Dữ liệu định vị GPS
             </h4>
-            {gps && (
-              <a 
-                href={`https://www.google.com/maps?q=${gps.latitude},${gps.longitude}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-[10px] font-bold text-cyan-600 hover:text-cyan-800 hover:underline transition-all"
-              >
-                Google Maps <ExternalLink className="h-3 w-3" />
-              </a>
-            )}
           </div>
           
           {gps ? (

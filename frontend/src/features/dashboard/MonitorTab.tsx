@@ -6,21 +6,6 @@ import { Menu, Route, Shield } from 'lucide-react';
 import AlertsOverlay from './AlertsOverlay';
 import { useAlertProcessor } from '../../hooks/useAlertProcessor';
 
-const SmartGoogleMap = dynamic(
-  () => import('../../map/SmartGoogleMap'),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600 font-semibold">Đang tải Google Maps...</p>
-        </div>
-      </div>
-    )
-  }
-);
-
 const LeafletMap = dynamic(
   () => import('../../map/LeafletMap'),
   { 
@@ -43,7 +28,7 @@ export default function MonitorTab({
   isSidebarOpen: boolean; 
   onOpenSidebar: () => void; 
 }) {
-  const [mapProvider, setMapProvider] = useState<'google' | 'leaflet'>('leaflet');
+  const [mapProvider, setMapProvider] = useState<'leaflet'>('leaflet');
   const [showRoute, setShowRoute] = useState(true);
   const [showSafeZone, setShowSafeZone] = useState(true);
   const deviceId = 'DEVICE_ESP32_01'; // Default device ID
@@ -95,41 +80,13 @@ export default function MonitorTab({
       </div>
 
       {/* Map Renderer */}
-      {mapProvider === 'google' ? (
-        <SmartGoogleMap showRoute={showRoute} showSafeZone={showSafeZone} />
-      ) : (
-        <LeafletMap showRoute={showRoute} showSafeZone={showSafeZone} />
-      )}
+      <LeafletMap showRoute={showRoute} showSafeZone={showSafeZone} />
 
       {/* Alerts Overlay - Real-time alerts with danger border */}
       <AlertsOverlay deviceId={deviceId} onAlertClick={handleAlertClick} />
 
-      {/* Floating Toolbar (Map Provider & Map Controls) */}
+      {/* Floating Toolbar (Map Controls) */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[2000] flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-1.5 rounded-full shadow-lg border border-slate-200/50 whitespace-nowrap">
-        <button
-          onClick={() => setMapProvider('leaflet')}
-          className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-200 flex items-center gap-1 active:scale-95 ${
-            mapProvider === 'leaflet'
-              ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-          }`}
-        >
-          🍃 Leaflet
-        </button>
-        <button
-          onClick={() => setMapProvider('google')}
-          className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-200 flex items-center gap-1 active:scale-95 ${
-            mapProvider === 'google'
-              ? 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-          }`}
-        >
-          🗺️ Google Maps
-        </button>
-
-        {/* Separator Divider */}
-        <div className="w-px h-5 bg-slate-200 mx-1"></div>
-
         {/* Toggle Route Button */}
         <button
           onClick={() => setShowRoute(!showRoute)}

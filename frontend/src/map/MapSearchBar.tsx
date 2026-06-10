@@ -1,6 +1,11 @@
-import React from 'react';
-import { CATEGORY_MAP } from './mapConstants';
 import { SearchResult } from './types';
+
+// Category mapping (moved from mapConstants)
+const CATEGORY_MAP = {
+  device: { bg: '#00b494', icon: '📱', label: 'Thiết bị' },
+  location: { bg: '#3b82f6', icon: '📍', label: 'Địa điểm' },
+  poi: { bg: '#8b5cf6', icon: '🏢', label: 'Điểm quan tâm' },
+};
 
 interface MapSearchBarProps {
   searchQuery: string;
@@ -30,11 +35,11 @@ export default function MapSearchBar({
     <div
       style={{
         position: 'absolute',
-        top: '12px',
+        top: '16px', // Cùng hàng với toolbar
         left: '50%',
-        transform: 'translateX(-50%)',
+        transform: 'translateX(-463px)', // Dịch thêm 113px (3cm)
         zIndex: 1000,
-        width: '320px',
+        width: '240px',
         fontFamily: "'Segoe UI', Roboto, sans-serif",
       }}
     >
@@ -46,12 +51,13 @@ export default function MapSearchBar({
           backdropFilter: 'blur(12px)',
           borderRadius: showPanel ? '16px 16px 0 0' : '16px',
           boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-          padding: '10px 14px',
+          padding: '6px 12px', // Giảm từ 10px 14px xuống 6px 12px
           gap: '8px',
           border: '1px solid rgba(226, 232, 240, 0.8)',
+          height: '36px', // Thêm height cố định
         }}
       >
-        <span style={{ fontSize: '16px', flexShrink: 0 }}>🔍</span>
+        <span style={{ fontSize: '14px', flexShrink: 0 }}>🔍</span> {/* Giảm icon size từ 16px xuống 14px */}
         <input
           type="text"
           placeholder="Tìm thiết bị hoặc địa điểm..."
@@ -66,7 +72,7 @@ export default function MapSearchBar({
             border: 'none',
             outline: 'none',
             background: 'transparent',
-            fontSize: '14px',
+            fontSize: '13px', // Giảm từ 14px xuống 13px
             color: '#1e293b',
             width: '100%',
             fontFamily: 'inherit',

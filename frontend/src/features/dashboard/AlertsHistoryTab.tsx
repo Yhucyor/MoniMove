@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getAlertsHistory, AlertLog } from '../../services/api';
-import { AlertTriangle, Clock, RefreshCw, Trash2, MapPin, ExternalLink, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Clock, RefreshCw, Trash2, ShieldCheck } from 'lucide-react';
 
 export default function AlertsHistoryTab() {
   const [logs, setLogs] = useState<AlertLog[]>([]);
@@ -156,20 +156,6 @@ export default function AlertsHistoryTab() {
                         <span>{getRelativeTime(log.timestamp)}</span>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Actions (Map Link if we want to locate the event) */}
-                  <div className="sm:self-center shrink-0">
-                    <a
-                      href={`https://www.google.com/maps?q=10.8045,106.7380`} // Default center mapping, or custom coordinates if saved
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-slate-300/60 px-3 py-1.5 text-[10px] font-bold text-slate-600 transition-all active:scale-95"
-                    >
-                      <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                      Định vị sự cố
-                      <ExternalLink className="h-3 w-3 text-slate-400" />
-                    </a>
                   </div>
                 </div>
               </div>
