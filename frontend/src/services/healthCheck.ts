@@ -8,10 +8,16 @@ const getApiBaseUrl = () => {
 
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
+    
+    // Nếu chạy trên domain production thực tế trên Render, tự động chuyển hướng về backend production
+    if (hostname.includes('monimove.onrender.com')) {
+      return 'https://monimove-2.onrender.com/api';
+    }
+    
     return `http://${hostname}:3001/api`;
   }
 
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+  return process.env.NEXT_PUBLIC_API_URL || 'https://monimove-2.onrender.com/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
