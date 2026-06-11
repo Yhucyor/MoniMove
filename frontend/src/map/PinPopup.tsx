@@ -1,13 +1,29 @@
 import React from 'react';
 import { MapPin, Gauge, Clock, Shield, Navigation } from 'lucide-react';
 import { CATEGORY_MAP } from './mapConstants';
-import { DeviceMarker } from './types';
+interface ExtendedDeviceMarker {
+  id?: string;
+  name?: string;
+  category?: string;
+  type?: string;
+  lat: number;
+  lng: number;
+  speed?: number;
+  status?: string;
+  lastUpdate?: string;
+  travel_from_prev?: {
+    distance?: number;
+    duration?: number;
+  };
+  tags?: string[];
+}
 
 interface PinPopupProps {
-  poi: DeviceMarker;
+  poi: ExtendedDeviceMarker;
   index?: number;
   currency?: string;
 }
+
 
 export default function PinPopup({ poi, index, currency = 'VND' }: PinPopupProps) {
   const typeKey = poi.category ?? poi.type ?? 'device';
