@@ -11,9 +11,16 @@ async function bootstrap() {
   // Set global prefix to api
   app.setGlobalPrefix('api');
   
-  // Bật CORS để Frontend Next.js (cổng 3000) có thể thoải mái gọi API sang đây
+  // Bật CORS để Frontend Next.js có thể gọi API sang đây
+  const frontendUrl = process.env.FRONTEND_URL;
+  const origins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+  if (frontendUrl) {
+    origins.push(frontendUrl);
+    origins.push(frontendUrl.replace(/\/$/, ''));
+  }
+
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: origins,
     credentials: true,
   });
 

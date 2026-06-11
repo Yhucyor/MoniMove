@@ -1,11 +1,5 @@
 import { SearchResult } from './types';
-
-// Category mapping (moved from mapConstants)
-const CATEGORY_MAP = {
-  device: { bg: '#00b494', icon: '📱', label: 'Thiết bị' },
-  location: { bg: '#3b82f6', icon: '📍', label: 'Địa điểm' },
-  poi: { bg: '#8b5cf6', icon: '🏢', label: 'Điểm quan tâm' },
-};
+import { CATEGORY_MAP } from './mapConstants';
 
 interface MapSearchBarProps {
   searchQuery: string;
