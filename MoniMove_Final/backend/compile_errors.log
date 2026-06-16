@@ -1,0 +1,82 @@
+src/alerts/alerts.controller.ts(10,8): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/alerts/alerts.controller.ts(18,8): error TS2307: Cannot find module '@nestjs/swagger' or its corresponding type declarations.
+src/alerts/alerts.controller.ts(105,36): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/alerts/alerts.module.ts(1,24): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/alerts/alerts.service.ts(1,36): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/alerts/alerts.service.ts(17,16): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/alerts/alerts.service.ts(18,19): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/alerts/alerts.service.ts(84,22): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/app.controller.ts(1,33): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/app.controller.ts(2,52): error TS2307: Cannot find module '@nestjs/swagger' or its corresponding type declarations.
+src/app.controller.ts(19,26): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/app.controller.ts(31,26): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/app.controller.ts(33,30): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/app.controller.ts(34,31): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/app.module.ts(1,24): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/app.service.ts(1,28): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/auth/auth.controller.ts(1,65): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/auth/auth.controller.ts(2,61): error TS2307: Cannot find module '@nestjs/swagger' or its corresponding type declarations.
+src/auth/auth.controller.ts(3,38): error TS2307: Cannot find module 'class-validator' or its corresponding type declarations.
+src/auth/auth.controller.ts(4,29): error TS2307: Cannot find module '@nestjs/swagger' or its corresponding type declarations.
+src/auth/auth.controller.ts(6,31): error TS2307: Cannot find module 'express' or its corresponding type declarations.
+src/auth/auth.module.ts(1,24): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/common/decorators/current-user.decorator.ts(1,56): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/common/decorators/roles.decorator.ts(1,29): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/common/dto/create-alert.dto.ts(1,50): error TS2307: Cannot find module '@nestjs/swagger' or its corresponding type declarations.
+src/common/dto/create-alert.dto.ts(2,66): error TS2307: Cannot find module 'class-validator' or its corresponding type declarations.
+src/common/dto/update-user.dto.ts(1,29): error TS2307: Cannot find module '@nestjs/swagger' or its corresponding type declarations.
+src/common/dto/update-user.dto.ts(2,41): error TS2307: Cannot find module 'class-validator' or its corresponding type declarations.
+src/common/guards/roles.guard.ts(1,79): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/common/guards/roles.guard.ts(2,27): error TS2307: Cannot find module '@nestjs/core' or its corresponding type declarations.
+src/devices/devices.controller.ts(10,8): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/devices/devices.controller.ts(18,8): error TS2307: Cannot find module '@nestjs/swagger' or its corresponding type declarations.
+src/devices/devices.module.ts(1,24): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/devices/devices.service.ts(1,50): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/devices/devices.service.ts(17,16): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/devices/devices.service.ts(18,19): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/firebase/firebase-auth.guard.ts(1,90): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/firebase/firebase.module.ts(1,24): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/firebase/firebase.service.ts(1,50): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/firebase/firebase.service.ts(2,24): error TS2307: Cannot find module 'firebase-admin' or its corresponding type declarations.
+src/firebase/firebase.service.ts(3,23): error TS2307: Cannot find module 'path' or its corresponding type declarations.
+src/firebase/firebase.service.ts(26,49): error TS2304: Cannot find name '__dirname'.
+src/firebase/firebase.service.ts(30,24): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/mail/mail.module.ts(1,24): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/mail/mail.service.ts(1,36): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/mail/mail.service.ts(2,29): error TS2307: Cannot find module 'nodemailer' or its corresponding type declarations.
+src/mail/mail.service.ts(14,25): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/mail/mail.service.ts(16,19): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/mail/mail.service.ts(19,13): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/mail/mail.service.ts(23,15): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/mail/mail.service.ts(164,15): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/mail/mail.service.ts(164,61): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/main.ts(2,29): error TS2307: Cannot find module '@nestjs/core' or its corresponding type declarations.
+src/main.ts(3,32): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/main.ts(4,48): error TS2307: Cannot find module '@nestjs/swagger' or its corresponding type declarations.
+src/main.ts(14,23): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/main.ts(70,16): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/main.ts(77,35): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/realtime/realtime.gateway.ts(10,8): error TS2307: Cannot find module '@nestjs/websockets' or its corresponding type declarations.
+src/realtime/realtime.gateway.ts(11,32): error TS2307: Cannot find module 'socket.io' or its corresponding type declarations.
+src/realtime/realtime.gateway.ts(12,24): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/realtime/realtime.gateway.ts(62,11): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/realtime/realtime.gateway.ts(62,39): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/realtime/realtime.module.ts(1,24): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/realtime/rtdb-listener.service.ts(1,67): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/realtime/rtdb-listener.service.ts(5,3): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/realtime/rtdb-listener.service.ts(7,19): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/realtime/rtdb-listener.service.ts(20,25): error TS2503: Cannot find namespace 'NodeJS'.
+src/seed/seed.module.ts(1,24): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/seed/seed.service.ts(1,50): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/seed/seed.service.ts(2,24): error TS2307: Cannot find module 'firebase-admin' or its corresponding type declarations.
+src/seed/seed.service.ts(34,9): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/settings/settings.controller.ts(1,62): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/settings/settings.controller.ts(2,64): error TS2307: Cannot find module '@nestjs/swagger' or its corresponding type declarations.
+src/settings/settings.module.ts(1,24): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/settings/settings.service.ts(1,28): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/settings/settings.service.ts(14,16): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/settings/settings.service.ts(15,19): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/users/users.controller.ts(11,8): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/users/users.controller.ts(19,8): error TS2307: Cannot find module '@nestjs/swagger' or its corresponding type declarations.
+src/users/users.module.ts(1,24): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
+src/users/users.service.ts(1,28): error TS2307: Cannot find module '@nestjs/common' or its corresponding type declarations.
