@@ -68,10 +68,7 @@ export default function DevicesOverviewTab() {
   }, []);
 
   const onlineCount = devices.filter(
-    (d) =>
-      d.connectionStatus === "online" ||
-      d.status === "online" ||
-      d.status === "active",
+    (d) => d.connectionStatus === "online",
   ).length;
   const offlineCount = devices.length - onlineCount;
 
@@ -80,10 +77,7 @@ export default function DevicesOverviewTab() {
       !searchQuery ||
       d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       d.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const isOnline =
-      d.connectionStatus === "online" ||
-      d.status === "online" ||
-      d.status === "active";
+    const isOnline = d.connectionStatus === "online";
     const matchStatus =
       filterStatus === "all" ||
       (filterStatus === "online" && isOnline) ||

@@ -62,10 +62,7 @@ export default function AdminOverviewTab() {
         devices: deviceList.length,
         alerts: alerts.length,
         online: deviceList.filter(
-          (d) =>
-            d.connectionStatus === "online" ||
-            d.status === "online" ||
-            d.status === "active",
+          (d) => d.connectionStatus === "online",
         ).length,
       });
       setRecentAlerts(alerts.slice(0, 5));
