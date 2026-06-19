@@ -1,5 +1,4 @@
-import { LayoutDashboard, Cpu, Settings, Info, LogOut, User, AlertTriangle, Activity, BarChart2 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { LayoutDashboard, Cpu, Settings, Info, AlertTriangle, Activity, BarChart2 } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -9,9 +8,6 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose, activeTab, onTabChange }: SidebarProps) {
-  const { user, logout } = useAuth();
-  const userName = user?.name || 'Người dùng';
-  const userRole = user?.role === 'admin' ? 'Admin' : 'User';
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Activity },
@@ -138,31 +134,6 @@ export default function Sidebar({ isOpen, onClose, activeTab, onTabChange }: Sid
         </nav>
       </div>
 
-      <div
-        style={{
-          transitionDelay: isOpen ? '340ms' : '0ms',
-        }}
-        className={`relative z-10 flex flex-col gap-2 border-t border-slate-200/80 pt-3 pr-3 transition-all duration-500 transform ${isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
-          }`}
-      >
-        <div className="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white/60 px-2 py-1.5 shadow-sm">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500 shadow-inner border border-slate-200/40">
-            <User className="h-4 w-4" />
-          </div>
-          <div className="flex min-w-0 flex-col">
-            <span className="truncate text-[11px] font-bold text-slate-800">{userName}</span>
-            <span className="text-[8px] font-semibold uppercase tracking-wider text-slate-500">{userRole}</span>
-          </div>
-        </div>
-
-        <button
-          onClick={logout}
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-white border border-slate-200/80 px-3 py-2 text-xs font-bold text-slate-700 transition-all duration-150 hover:bg-slate-50 hover:text-slate-900 active:scale-95 shadow-sm"
-        >
-          <LogOut className="h-3.5 w-3.5" />
-          Đăng xuất
-        </button>
-      </div>
     </aside>
   );
 }

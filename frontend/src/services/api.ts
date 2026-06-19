@@ -72,7 +72,7 @@ export interface DeviceInfo {
 }
 
 // Get current position of a device
-export async function getCurrentPosition(deviceId: string): Promise<DevicePosition> {
+export async function getCurrentPosition(deviceId: string): Promise<DevicePosition | null> {
   try {
     const response = await fetch(`${API_BASE_URL}/devices/${deviceId}/position`, {
       headers: getAuthHeaders()
@@ -80,20 +80,13 @@ export async function getCurrentPosition(deviceId: string): Promise<DevicePositi
     if (!response.ok) throw new Error('Failed to fetch position');
     return await response.json();
   } catch (error) {
-    console.warn('Error fetching current position (using fallback):', error instanceof Error ? error.message : error);
-    // Fallback data
-    return {
-      lat: 10.8045,
-      lng: 106.7380,
-      timestamp: Date.now(),
-      speed: 45,
-      heading: 90
-    };
+    console.warn('Error fetching current position:', error instanceof Error ? error.message : error);
+    return null;
   }
 }
 
 // Get device route
-export async function getDeviceRoute(deviceId: string): Promise<DeviceRoute> {
+export async function getDeviceRoute(deviceId: string): Promise<DeviceRoute | null> {
   try {
     const response = await fetch(`${API_BASE_URL}/devices/${deviceId}/route`, {
       headers: getAuthHeaders()
@@ -101,43 +94,22 @@ export async function getDeviceRoute(deviceId: string): Promise<DeviceRoute> {
     if (!response.ok) throw new Error('Failed to fetch route');
     return await response.json();
   } catch (error) {
-    console.warn('Error fetching route (using fallback):', error instanceof Error ? error.message : error);
-    // Fallback data
-    return {
-      deviceId,
-      waypoints: [
-        [10.7756, 106.7068],
-        [10.8018, 106.7280],
-        [10.8045, 106.7380]
-      ]
-    };
+    console.warn('Error fetching route:', error instanceof Error ? error.message : error);
+    return null;
   }
 }
 
 // Get device info
-export async function getDeviceInfo(deviceId: string): Promise<DeviceInfo> {
+export async function getDeviceInfo(deviceId: string): Promise<DeviceInfo | null> {
   try {
-    // Debug: show the base URL being used
-
     const response = await fetch(`${API_BASE_URL}/devices/${deviceId}`, {
       headers: getAuthHeaders()
     });
-    if (!response.ok) {
-      const errText = await response.text();
-      console.warn('Failed to fetch device info, status:', response.status, errText);
-      throw new Error(`Failed to fetch device info (status ${response.status})`);
-    }
+    if (!response.ok) throw new Error(`Failed to fetch device info (status ${response.status})`);
     return await response.json();
   } catch (error) {
-    console.warn('Error fetching device info (using fallback):', error instanceof Error ? error.message : error);
-    // Fallback data
-    return {
-      id: deviceId,
-      name: 'MoniMove - 01',
-      status: 'active',
-      battery: 85,
-      lastUpdate: Date.now()
-    };
+    console.warn('Error fetching device info:', error instanceof Error ? error.message : error);
+    return null;
   }
 }
 
@@ -329,6 +301,37 @@ export async function listDevices(): Promise<DeviceListItem[]> {
       connectionStatus: c.connectionStatus as DeviceListItem['connectionStatus'],
     }));
   }
+}
+
+// ─── Device Settings ──────────────────────────────────────────────────────────
+
+export interface DeviceSettings {
+  sos_email?: string;
+  sos_phone?: string;
+  tilt_threshold?: number;
+  accel_threshold?: number;
+  speed_threshold?: number;
+  sensitivity?: number;
+  enable_sms?: boolean;
+  enable_audio?: boolean;
+}
+
+export async function getDeviceSettings(deviceId: string): Promise<DeviceSettings> {
+  const response = await fetch(`${API_BASE_URL}/settings/${encodeURIComponent(deviceId)}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error('Failed to fetch device settings');
+  return await response.json();
+}
+
+export async function saveDeviceSettings(deviceId: string, settings: DeviceSettings): Promise<{ success: boolean }> {
+  const response = await fetch(`${API_BASE_URL}/settings/${encodeURIComponent(deviceId)}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(settings),
+  });
+  if (!response.ok) throw new Error('Failed to save device settings');
+  return await response.json();
 }
 
 // Get alerts history

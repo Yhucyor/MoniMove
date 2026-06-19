@@ -1,11 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import {
   MapPin, Navigation, Rotate3D, Activity, Satellite,
-  ShieldAlert, ShieldCheck, Clock, Tag, ExternalLink, Volume2, VolumeX, AlertTriangle
+  ShieldAlert, ShieldCheck, Clock, Tag, Volume2, VolumeX, AlertTriangle
 } from 'lucide-react';
 import { DeviceInfo } from '../../services/api';
 import { getConnectionStatus, formatLastSeen } from '../../utils/deviceStatus';
+import MapModal from './MapModal';
 
 interface DeviceCardProps {
   device: DeviceInfo;
@@ -30,7 +32,7 @@ function calcTotalAccel(accel: { x: number; y: number; z: number } | undefined):
 const renderProgressBar = (label: string, value: number, max: number, unit: string = '°') => {
   const absValue = Math.abs(value);
   const percentage = Math.min(100, (absValue / max) * 100);
-  
+
   let colorClass = 'bg-emerald-500';
   let textClass = 'text-emerald-600';
   if (percentage > 60) {
@@ -58,12 +60,18 @@ export default function DeviceCard({ device, viewMode = 'grid' }: DeviceCardProp
   const gps = device.current_data?.gps;
   const mpu = device.current_data?.mpu6050;
   const buzzerActive = device.current_data?.buzzer ?? false;
+  const [showMap, setShowMap] = useState(false);
 
   const isTilted = mpu?.is_tilted ?? false;
-  const conn = device.connectionStatus || getConnectionStatus(device.lastUpdate, undefined, device.status);
+  // Ưu tiên GPS updated_at (realtime nhất), sau đó lastUpdate, rồi connectionStatus từ API
+  const gpsUpdatedAt = gps?.updated_at ? gps.updated_at * 1000 : undefined;
+  const effectiveLastUpdate = gpsUpdatedAt || device.lastUpdate;
+  const conn = device.connectionStatus === 'online'
+    ? 'online'
+    : getConnectionStatus(effectiveLastUpdate, undefined, device.status);
   const { pitch, roll } = calcTiltAngles(mpu?.accel);
   const yaw = mpu?.gyro?.z ?? 0;
-  
+
   const totalAccelMs2 = calcTotalAccel(mpu?.accel);
   const totalAccelG = totalAccelMs2 / 9.81;
   const dynamicG = Math.abs(totalAccelG - 1.0);
@@ -79,7 +87,6 @@ export default function DeviceCard({ device, viewMode = 'grid' }: DeviceCardProp
   }
 
   const isList = viewMode === 'list';
-  const mapUrl = gps ? `https://www.google.com/maps?q=${gps.latitude},${gps.longitude}` : '#';
 
   return (
     <div className={`group relative overflow-hidden rounded-[32px] border border-slate-200/50 bg-white/90 backdrop-blur-xl p-6 shadow-lg hover:shadow-xl hover:border-cyan-300/40 transition-all duration-500 ease-out transform hover:-translate-y-1 ${isList ? 'w-full flex flex-col md:flex-row gap-6' : 'w-full flex flex-col'}`}>
@@ -103,12 +110,11 @@ export default function DeviceCard({ device, viewMode = 'grid' }: DeviceCardProp
           <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${conn === 'online' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/40' : 'bg-slate-100 text-slate-500 border border-slate-200/40'}`}>
             {conn === 'online' ? '● Online' : '● Offline'}
           </span>
-          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-            overallStatus === 'DANGER' ? 'bg-red-50 text-red-600 border border-red-200/40 animate-pulse' :
-            overallStatus === 'WARNING' ? 'bg-amber-50 text-amber-600 border border-amber-200/40' :
-            'bg-emerald-50 text-emerald-600 border border-emerald-200/40'
-          }`}>
-            {overallStatus === 'DANGER' ? <ShieldAlert className="w-3 h-3"/> : overallStatus === 'WARNING' ? <AlertTriangle className="w-3 h-3"/> : <ShieldCheck className="w-3 h-3"/>}
+          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${overallStatus === 'DANGER' ? 'bg-red-50 text-red-600 border border-red-200/40 animate-pulse' :
+              overallStatus === 'WARNING' ? 'bg-amber-50 text-amber-600 border border-amber-200/40' :
+                'bg-emerald-50 text-emerald-600 border border-emerald-200/40'
+            }`}>
+            {overallStatus === 'DANGER' ? <ShieldAlert className="w-3 h-3" /> : overallStatus === 'WARNING' ? <AlertTriangle className="w-3 h-3" /> : <ShieldCheck className="w-3 h-3" />}
             {overallStatus}
           </span>
         </div>
@@ -116,7 +122,7 @@ export default function DeviceCard({ device, viewMode = 'grid' }: DeviceCardProp
 
       {/* SENSOR DATA & STATUS */}
       <div className={`space-y-4 ${isList ? 'flex-1 grid grid-cols-1 xl:grid-cols-2 gap-4 space-y-0' : ''}`}>
-        
+
         {/* GPS Panel */}
         <div className="rounded-[24px] border border-cyan-100/50 bg-gradient-to-br from-cyan-50/50 via-white to-transparent p-5 relative overflow-hidden group/gps">
           <div className="absolute right-2 top-2 h-20 w-20 opacity-5 group-hover/gps:scale-110 transition-transform duration-500">
@@ -127,9 +133,12 @@ export default function DeviceCard({ device, viewMode = 'grid' }: DeviceCardProp
               <MapPin className="mr-1.5 h-4 w-4 text-cyan-600" /> Định vị GPS
             </h4>
             {gps && (
-              <a href={mapUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-cyan-500 hover:bg-cyan-600 px-3 py-1.5 rounded-full transition-colors shadow-sm hover:shadow">
-                Mở Bản Đồ <ExternalLink className="w-3 h-3" />
-              </a>
+              <button
+                onClick={() => setShowMap(true)}
+                className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-cyan-500 hover:bg-cyan-600 px-3 py-1.5 rounded-full transition-colors shadow-sm hover:shadow cursor-pointer active:scale-95"
+              >
+                <MapPin className="w-3 h-3" /> Mở Bản Đồ
+              </button>
             )}
           </div>
           {gps ? (
@@ -178,11 +187,10 @@ export default function DeviceCard({ device, viewMode = 'grid' }: DeviceCardProp
         </div>
 
         {/* IMU MPU6050 Panel */}
-        <div className={`rounded-[24px] border p-5 transition-colors duration-300 relative overflow-hidden group/imu ${
-          overallStatus === 'DANGER' ? 'border-red-200 bg-red-50/40' : 
-          overallStatus === 'WARNING' ? 'border-amber-200 bg-amber-50/40' : 
-          'border-purple-100/50 bg-gradient-to-br from-purple-50/40 via-white to-transparent'
-        }`}>
+        <div className={`rounded-[24px] border p-5 transition-colors duration-300 relative overflow-hidden group/imu ${overallStatus === 'DANGER' ? 'border-red-200 bg-red-50/40' :
+            overallStatus === 'WARNING' ? 'border-amber-200 bg-amber-50/40' :
+              'border-purple-100/50 bg-gradient-to-br from-purple-50/40 via-white to-transparent'
+          }`}>
           <div className="absolute right-2 top-2 h-20 w-20 opacity-5 group-hover/imu:rotate-12 transition-transform duration-500">
             <Rotate3D className={`h-full w-full ${overallStatus === 'DANGER' ? 'text-red-500' : 'text-purple-500'}`} />
           </div>
@@ -190,9 +198,8 @@ export default function DeviceCard({ device, viewMode = 'grid' }: DeviceCardProp
             <h4 className={`flex items-center text-xs font-extrabold uppercase tracking-wider ${overallStatus === 'DANGER' ? 'text-red-700' : 'text-purple-700'}`}>
               <Rotate3D className="mr-1.5 h-4 w-4" /> MPU6050 IMU
             </h4>
-            <div className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border ${
-              buzzerActive ? 'bg-red-500 text-white border-red-600 animate-pulse' : 'bg-slate-100 text-slate-500 border-slate-200'
-            }`}>
+            <div className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border ${buzzerActive ? 'bg-red-500 text-white border-red-600 animate-pulse' : 'bg-slate-100 text-slate-500 border-slate-200'
+              }`}>
               {buzzerActive ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
               Buzzer {buzzerActive ? 'ON' : 'OFF'}
             </div>
@@ -205,7 +212,7 @@ export default function DeviceCard({ device, viewMode = 'grid' }: DeviceCardProp
                 {renderProgressBar('Roll', roll, 90)}
                 {renderProgressBar('Yaw (Gyro Z)', yaw, 360, '°/s')}
               </div>
-              
+
               <div className="grid grid-cols-2 gap-3">
                 <div className={`rounded-xl border bg-white px-4 py-3 shadow-sm ${dynamicG > 1.5 ? 'border-red-200' : 'border-slate-100'}`}>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1 mb-1"><Activity className="h-3 w-3" /> G-Force</p>
@@ -240,6 +247,17 @@ export default function DeviceCard({ device, viewMode = 'grid' }: DeviceCardProp
           </span>
         </div>
       </div>
+
+      {/* Map Modal */}
+      {showMap && gps && (
+        <MapModal
+          deviceId={device.id}
+          deviceName={device.name}
+          lat={gps.latitude}
+          lng={gps.longitude}
+          onClose={() => setShowMap(false)}
+        />
+      )}
     </div>
   );
 }

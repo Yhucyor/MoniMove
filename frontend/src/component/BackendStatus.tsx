@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Zap, ZapOff, Server, Wifi, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import { checkBackendHealth, type HealthCheckResult } from '../services/healthCheck';
 
@@ -17,6 +17,37 @@ export default function BackendStatus() {
   const [details, setDetails] = useState<DetailedHealth | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
+
+  // Drag state
+  const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
+  const draggingRef = useRef(false);
+  const offsetRef = useRef({ x: 0, y: 0 });
+  const divRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!divRef.current) return;
+    const rect = divRef.current.getBoundingClientRect();
+    offsetRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    draggingRef.current = true;
+    e.preventDefault();
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!draggingRef.current) return;
+      setPosition({
+        left: Math.max(0, Math.min(window.innerWidth - 220, e.clientX - offsetRef.current.x)),
+        top: Math.max(0, Math.min(window.innerHeight - 60, e.clientY - offsetRef.current.y)),
+      });
+    };
+    const handleMouseUp = () => { draggingRef.current = false; };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
 
   const check = async () => {
     setIsChecking(true);
@@ -39,12 +70,17 @@ export default function BackendStatus() {
   const isOnline = health.isBackendOnline;
 
   return (
-    <div className="fixed bottom-4 right-4 z-[10000] select-none">
+    <div
+      ref={divRef}
+      className="fixed z-[10000] select-none"
+      style={position ? { left: position.left, top: position.top } : { bottom: 80, right: 16 }}
+    >
       {/* Collapsed pill */}
       {!isExpanded && (
         <button
+          onMouseDown={handleMouseDown}
           onClick={() => setIsExpanded(true)}
-          className={`flex items-center gap-2 rounded-full px-3 py-2 text-[11px] font-bold shadow-lg border transition-all ${isOnline
+          className={`flex items-center gap-2 rounded-full px-3 py-2 text-[11px] font-bold shadow-lg border transition-all cursor-grab active:cursor-grabbing ${isOnline
               ? 'bg-emerald-500 border-emerald-400 text-white hover:bg-emerald-600'
               : 'bg-red-500 border-red-400 text-white hover:bg-red-600 animate-pulse'
             }`}
@@ -58,8 +94,11 @@ export default function BackendStatus() {
       {/* Expanded panel */}
       {isExpanded && (
         <div className="w-72 rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-200">
-          {/* Header */}
-          <div className={`flex items-center justify-between px-4 py-3 ${isOnline ? 'bg-emerald-500' : 'bg-red-500'}`}>
+          {/* Header — drag handle */}
+          <div
+            onMouseDown={handleMouseDown}
+            className={`flex items-center justify-between px-4 py-3 cursor-grab active:cursor-grabbing ${isOnline ? 'bg-emerald-500' : 'bg-red-500'}`}
+          >
             <div className="flex items-center gap-2 text-white">
               <Server className="h-4 w-4" />
               <span className="text-xs font-bold">MoniMove Backend</span>

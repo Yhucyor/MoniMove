@@ -7,11 +7,14 @@ export declare class RtdbListenerService implements OnModuleInit, OnModuleDestro
     private lastDeviceSnapshots;
     private lastAlertCount;
     private knownAlertIds;
+    private tripStates;
     constructor(gateway: RealtimeGateway);
     onModuleInit(): void;
     onModuleDestroy(): void;
     private startPolling;
     private poll;
     private pollDevices;
+    private handleTripDetection;
+    private saveHistoryPoint;
     private pollAlerts;
 }

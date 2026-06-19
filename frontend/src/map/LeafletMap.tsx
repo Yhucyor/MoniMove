@@ -69,8 +69,8 @@ interface MapComponentProps {
   deviceId?: string;
 }
 
-export default function MapComponent({ showRoute = true, showSafeZone = true, deviceId = 'DEVICE_ESP32_01' }: MapComponentProps) {
-  const [centerPosition, setCenterPosition] = useState<[number, number]>([10.7769, 106.7009]);
+export default function MapComponent({ showRoute = true, showSafeZone = true, deviceId = '' }: MapComponentProps) {
+  const [centerPosition, setCenterPosition] = useState<[number, number]>([16.0, 108.0]); // trung tâm VN
 
   // Search states
   const [searchQuery, setSearchQuery] = useState('');
@@ -82,11 +82,11 @@ export default function MapComponent({ showRoute = true, showSafeZone = true, de
   const [mapStyle, setMapStyle] = useState<keyof typeof MAP_STYLES>('standard');
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
   const [isLoadingRoute, setIsLoadingRoute] = useState(false);
-  const [currentPosition, setCurrentPosition] = useState<[number, number]>([10.8045, 106.7380]);
-  const [speed, setSpeed] = useState(45);
+  const [currentPosition, setCurrentPosition] = useState<[number, number] | null>(null);
+  const [speed, setSpeed] = useState(0);
   const [isDanger, setIsDanger] = useState(false);
-  const [distance, setDistance] = useState(12.5);
-  const [duration, setDuration] = useState('18 phút');
+  const [distance, setDistance] = useState(0);
+  const [duration, setDuration] = useState('—');
   const [waypoints, setWaypoints] = useState<[number, number][]>([]);
   const [showMapStyleMenu, setShowMapStyleMenu] = useState(false);
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
@@ -159,11 +159,11 @@ export default function MapComponent({ showRoute = true, showSafeZone = true, de
           const coordinates = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
           setRouteCoordinates(coordinates);
         } else {
-          setRouteCoordinates(waypoints);
+          setRouteCoordinates([]);
         }
       } catch (error) {
         console.error('Error fetching route:', error);
-        setRouteCoordinates(waypoints);
+        setRouteCoordinates([]);
       } finally {
         setIsLoadingRoute(false);
       }
@@ -203,11 +203,11 @@ export default function MapComponent({ showRoute = true, showSafeZone = true, de
             }
           }
         } else {
-          setUserToDeviceRoute([userPosition, currentPosition]);
+          setUserToDeviceRoute([]);
         }
       } catch (error) {
         console.error('Error fetching user route:', error);
-        setUserToDeviceRoute([userPosition, currentPosition]);
+        setUserToDeviceRoute([]);
       } finally {
         setIsLoadingUserRoute(false);
       }
@@ -376,7 +376,7 @@ export default function MapComponent({ showRoute = true, showSafeZone = true, de
       >
         <MapInstanceGrabber onChange={setMapInstance} />
         <TileLayer attribution={MAP_STYLES[mapStyle].attribution} url={MAP_STYLES[mapStyle].url} />
-        {showSafeZone && (
+        {showSafeZone && currentPosition && (
           <Circle
             center={currentPosition}
             radius={500}
@@ -445,40 +445,42 @@ export default function MapComponent({ showRoute = true, showSafeZone = true, de
             )
           )
         )}
-        <Marker position={currentPosition} icon={customIcon}>
-          <Popup>
-            <div className="text-sm font-sans p-2 min-w-[220px]">
-              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-200">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <p className="font-bold text-[#00b494] text-base">Nạn nhân (MoniMove)</p>
+        {currentPosition && (
+          <Marker position={currentPosition} icon={customIcon}>
+            <Popup>
+              <div className="text-sm font-sans p-2 min-w-[220px]">
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-200">
+                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                  <p className="font-bold text-[#00b494] text-base">Nạn nhân (MoniMove)</p>
+                </div>
+                <div className="space-y-2 text-xs text-slate-600">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-cyan-500" />
+                    <span className="font-mono">{currentPosition[0].toFixed(4)}°N, {currentPosition[1].toFixed(4)}°E</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Gauge className="w-4 h-4 text-blue-500" />
+                    <span> Tốc độ: <strong>{speed} km/h</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Route className="w-4 h-4 text-purple-500" />
+                    <span>Quãng đường: <strong>{distance} km</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-orange-500" />
+                    <span>Thời gian: <strong>{duration}</strong></span>
+                  </div>
+                </div>
+                <div className="mt-3 pt-2 border-t border-slate-200">
+                  <p className="text-green-600 font-semibold text-xs flex items-center gap-1">
+                    <Shield className="w-3 h-3" />
+                    Đang kết nối - An toàn
+                  </p>
+                </div>
               </div>
-              <div className="space-y-2 text-xs text-slate-600">
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-cyan-500" />
-                  <span className="font-mono">{currentPosition[0].toFixed(4)}°N, {currentPosition[1].toFixed(4)}°E</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Gauge className="w-4 h-4 text-blue-500" />
-                  <span> Tốc độ: <strong>{speed} km/h</strong></span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Route className="w-4 h-4 text-purple-500" />
-                  <span>Quãng đường: <strong>{distance} km</strong></span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-orange-500" />
-                  <span>Thời gian: <strong>{duration}</strong></span>
-                </div>
-              </div>
-              <div className="mt-3 pt-2 border-t border-slate-200">
-                <p className="text-green-600 font-semibold text-xs flex items-center gap-1">
-                  <Shield className="w-3 h-3" />
-                  Đang kết nối - An toàn
-                </p>
-              </div>
-            </div>
-          </Popup>
-        </Marker>
+            </Popup>
+          </Marker>
+        )}
         {userPosition && userIcon && (
           <Marker position={userPosition} icon={userIcon}>
             <Popup>
@@ -573,7 +575,7 @@ export default function MapComponent({ showRoute = true, showSafeZone = true, de
         <button
           onClick={async () => {
             const position = await getCurrentPosition(deviceId);
-            if (position) {
+            if (position && position.lat && position.lng) {
               setCurrentPosition([position.lat, position.lng]);
               if (position.speed) setSpeed(position.speed);
             }

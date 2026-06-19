@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Shield, Trash2, RefreshCw, Cpu, Search, UserCircle, Settings, Mail } from 'lucide-react';
+import { Users, Shield, Trash2, RefreshCw, Cpu, Search, UserCircle, Settings, Mail, Eye } from 'lucide-react';
 import {
   getAllUsers,
   updateUserRole,
@@ -12,6 +12,7 @@ import {
   DeviceListItem,
 } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import UserDetailModal from './UserDetailModal';
 
 export default function UsersManagementTab() {
   const { user: currentUser, refreshUser } = useAuth();
@@ -21,7 +22,8 @@ export default function UsersManagementTab() {
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expandedEmail, setExpandedEmail] = useState<string | null>(null);
-  
+  const [detailUser, setDetailUser] = useState<UserProfile | null>(null);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState<'all' | 'admin' | 'user'>('all');
 
@@ -94,8 +96,8 @@ export default function UsersManagementTab() {
   const userCount = users.length - adminCount;
 
   const filteredUsers = users.filter(u => {
-    const matchSearch = !searchQuery || 
-      u.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const matchSearch = !searchQuery ||
+      u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       u.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchRole = filterRole === 'all' || u.role === filterRole;
     return matchSearch && matchRole;
@@ -103,6 +105,11 @@ export default function UsersManagementTab() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300 max-w-7xl mx-auto">
+      {/* User Detail Modal */}
+      {detailUser && (
+        <UserDetailModal user={detailUser} onClose={() => setDetailUser(null)} />
+      )}
+
       {/* ─── Header ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-5">
         <div>
@@ -177,10 +184,10 @@ export default function UsersManagementTab() {
                 onClick={() => setFilterRole(role)}
                 className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${filterRole === role
                   ? role === 'admin' ? 'bg-amber-500 text-white shadow-sm'
-                  : role === 'user' ? 'bg-blue-500 text-white shadow-sm'
-                  : 'bg-slate-800 text-white shadow-sm'
+                    : role === 'user' ? 'bg-blue-500 text-white shadow-sm'
+                      : 'bg-slate-800 text-white shadow-sm'
                   : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
+                  }`}
               >
                 {role === 'all' ? 'Tất cả' : role === 'admin' ? 'Quản trị viên' : 'Người dùng'}
               </button>
@@ -232,7 +239,7 @@ export default function UsersManagementTab() {
             const initials = u.name ? u.name.split(' ').map(w => w[0]).slice(-2).join('').toUpperCase() : 'U';
             const isCurrentUser = u.email === currentUser?.email;
             const isExpanded = expandedEmail === u.email;
-            
+
             return (
               <div key={u.email} className={`relative rounded-2xl border bg-white shadow-sm transition-all duration-300 hover:shadow-md ${isExpanded ? 'border-purple-200 ring-4 ring-purple-50/50' : 'border-slate-200/60'}`}>
                 {/* User Header */}
@@ -263,9 +270,16 @@ export default function UsersManagementTab() {
                       </p>
                     </div>
                   </div>
-                  
+
                   {/* Actions Right */}
                   <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => setDetailUser(u)}
+                      className="p-2 rounded-xl border border-blue-100 bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-600 transition-colors"
+                      title="Xem chi tiết tài khoản"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
                     {!isCurrentUser && (
                       <button
                         onClick={() => handleDelete(u.email)}

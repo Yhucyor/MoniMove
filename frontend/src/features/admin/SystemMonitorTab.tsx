@@ -32,7 +32,7 @@ export default function SystemMonitorTab({
   const [showRoute, setShowRoute] = useState(true);
   const [showSafeZone, setShowSafeZone] = useState(true);
   const [devices, setDevices] = useState<DeviceListItem[]>([]);
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string>('DEVICE_ESP32_01');
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
   const [showDeviceMenu, setShowDeviceMenu] = useState(false);
 
   useEffect(() => {

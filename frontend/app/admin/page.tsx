@@ -3,24 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { useDeviceStatusMonitor } from '../../src/hooks/useDeviceStatusMonitor';
 // useOfflineSync đã được mount trong layout qua OfflineSyncProvider
 import AdminSidebar from '../../src/component/layout/AdminSidebar';
 import Header from '../../src/component/layout/Header';
 import AdminOverviewTab from '../../src/features/admin/AdminOverviewTab';
 import UsersManagementTab from '../../src/features/admin/UsersManagementTab';
 import DevicesOverviewTab from '../../src/features/admin/DevicesOverviewTab';
-import SystemMonitorTab from '../../src/features/admin/SystemMonitorTab';
-import AlertsHistoryTab from '../../src/features/dashboard/AlertsHistoryTab';
+import AdminSettingsTab from '../../src/features/admin/AdminSettingsTab';
 
 export default function AdminPage() {
   const router = useRouter();
   const { user, loading, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  useDeviceStatusMonitor();
-  // OfflineSync đã chạy toàn cục qua OfflineSyncProvider trong layout
 
   useEffect(() => {
     if (loading) return;
@@ -54,15 +49,8 @@ export default function AdminPage() {
         return <UsersManagementTab />;
       case 'devices':
         return <DevicesOverviewTab />;
-      case 'monitor':
-        return (
-          <SystemMonitorTab
-            isSidebarOpen={isSidebarOpen}
-            onOpenSidebar={() => setIsSidebarOpen(true)}
-          />
-        );
-      case 'alerts':
-        return <AlertsHistoryTab showAllDevices />;
+      case 'settings':
+        return <AdminSettingsTab />;
       default:
         return <AdminOverviewTab />;
     }
@@ -85,17 +73,9 @@ export default function AdminPage() {
       />
 
       <main className="flex-1 h-full w-full relative overflow-hidden bg-slate-50">
-        {activeTab !== 'monitor' && (
-          <Header onOpenSidebar={() => setIsSidebarOpen(true)} title="Bảng điều khiển Admin" />
-        )}
+        <Header onOpenSidebar={() => setIsSidebarOpen(true)} title="Bảng điều khiển Admin" />
 
-        <div
-          className={
-            activeTab === 'monitor'
-              ? 'absolute inset-0 w-full h-full z-10'
-              : 'h-full w-full pt-[76px] px-4 md:px-8 pb-10 overflow-y-auto overflow-x-hidden relative z-20'
-          }
-        >
+        <div className="h-full w-full pt-[76px] px-4 md:px-8 pb-10 overflow-y-auto overflow-x-hidden relative z-20">
           {renderContent()}
         </div>
       </main>

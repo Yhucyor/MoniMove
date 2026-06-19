@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Menu, Route, Shield } from 'lucide-react';
+import { Menu, Route } from 'lucide-react';
 import AlertsOverlay from './AlertsOverlay';
 import { useAlertProcessor } from '../../hooks/useAlertProcessor';
 import { useMyDevices } from '../../hooks/useMyDevices';
@@ -32,9 +32,8 @@ export default function MonitorTab({
   onOpenSidebar: () => void;
 }) {
   const [showRoute, setShowRoute] = useState(true);
-  const [showSafeZone, setShowSafeZone] = useState(true);
   const { primaryDeviceId, devices, loading: devicesLoading } = useMyDevices();
-  const deviceId = primaryDeviceId || 'DEVICE_ESP32_01';
+  const deviceId = primaryDeviceId || '';
 
   useAlertProcessor(deviceId);
 
@@ -82,7 +81,7 @@ export default function MonitorTab({
       </div>
 
       {/* Map */}
-      <LeafletMap deviceId={deviceId} showRoute={showRoute} showSafeZone={showSafeZone} />
+      <LeafletMap deviceId={deviceId} showRoute={showRoute} showSafeZone={false} />
 
       {/* Alerts overlay */}
       <AlertsOverlay deviceId={deviceId} />
@@ -98,16 +97,6 @@ export default function MonitorTab({
         >
           <Route className="w-3.5 h-3.5" />
           Lộ trình
-        </button>
-        <button
-          onClick={() => setShowSafeZone(!showSafeZone)}
-          className={`px-3.5 py-1.5 text-xs font-bold rounded-full transition-all duration-200 flex items-center gap-1.5 active:scale-95 border ${showSafeZone
-            ? 'bg-gradient-to-r from-emerald-100/80 to-teal-100/80 text-emerald-700 border-emerald-200/60'
-            : 'bg-slate-50/50 text-slate-400 border border-slate-200/40'
-            }`}
-        >
-          <Shield className="w-3.5 h-3.5" />
-          Vùng an toàn
         </button>
 
         {/* Live indicator */}

@@ -23,37 +23,6 @@ export declare class DevicesController {
         lastUpdate: number;
         lastPing: number;
         current_data: any;
-    } | {
-        id: string;
-        name: string;
-        licensePlate: any;
-        status: string;
-        connectionStatus: string;
-        battery: number;
-        lastUpdate: number;
-        lastPing: number;
-        current_data: {
-            gps: {
-                latitude: number;
-                longitude: number;
-                speed: number;
-                satellites: number;
-                updated_at: number;
-            };
-            mpu6050: {
-                accel: {
-                    x: number;
-                    y: number;
-                    z: number;
-                };
-                gyro: {
-                    x: number;
-                    y: number;
-                    z: number;
-                };
-                is_tilted: boolean;
-            };
-        };
     }>;
     getLatestPosition(deviceId: string, user: AuthUser): Promise<{
         lat: any;
@@ -64,7 +33,7 @@ export declare class DevicesController {
     }>;
     getRoute(deviceId: string, user: AuthUser): Promise<{
         deviceId: string;
-        waypoints: number[][];
+        waypoints: [number, number][];
         distance: number;
         duration: number;
     }>;

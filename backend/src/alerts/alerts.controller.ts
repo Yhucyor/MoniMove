@@ -43,7 +43,7 @@ export class AlertsController {
     private readonly mailService: MailService,
     private readonly firebaseService: FirebaseService,
     private readonly realtimeGateway: RealtimeGateway,
-  ) {}
+  ) { }
 
   @Post()
   @ApiOperation({ summary: 'Tạo cảnh báo mới', description: 'Lưu alert vào Firebase RTDB, push realtime qua WebSocket và gửi email SOS nếu khẩn cấp' })
@@ -107,11 +107,10 @@ export class AlertsController {
       throw new BadRequestException('toEmail phải là địa chỉ email hợp lệ');
     }
     await this.mailService.sendEmergencyEmail(target, {
-      alertType: 'Ngã đổ xe',
+      alertType: 'Kiểm tra hệ thống',
       message: '🧪 Email kiểm tra từ MoniMove. Nếu nhận được email này, SMTP đang hoạt động bình thường! ✅',
-      deviceId: 'DEVICE_ESP32_01',
+      deviceId: 'TEST',
       timestamp: Date.now(),
-      location: { lat: 10.8045, lng: 106.738 },
     });
     return { success: true, message: `✅ Email kiểm tra đã gửi tới ${target}` };
   }

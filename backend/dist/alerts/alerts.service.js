@@ -126,34 +126,8 @@ let AlertsService = AlertsService_1 = class AlertsService {
         }
         catch (error) {
             this.logger.error('Error fetching alerts:', error instanceof Error ? error.message : String(error));
+            return [];
         }
-        const now = Date.now();
-        return [
-            {
-                id: 'mock-alert-1',
-                deviceId: 'DEVICE_ESP32_01',
-                alertType: 'Ngã đổ xe',
-                message: 'Cảnh báo: Thiết bị bị ngã nghiêng quá góc 45°!',
-                timestamp: now - 3600000 * 2,
-                location: null,
-            },
-            {
-                id: 'mock-alert-2',
-                deviceId: 'DEVICE_ESP32_01',
-                alertType: 'Chấn động mạnh',
-                message: 'Cảnh báo: Phát hiện va chạm mạnh bất thường (Gia tốc > 4.5G)!',
-                timestamp: now - 3600000 * 24,
-                location: null,
-            },
-            {
-                id: 'mock-alert-3',
-                deviceId: 'DEVICE_ESP32_01',
-                alertType: 'Ngã đổ xe',
-                message: 'Cảnh báo: Thiết bị bị ngã nghiêng quá góc 45°!',
-                timestamp: now - 3600000 * 48,
-                location: null,
-            },
-        ];
     }
 };
 exports.AlertsService = AlertsService;

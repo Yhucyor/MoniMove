@@ -1,6 +1,10 @@
 export type ConnectionStatus = 'online' | 'offline' | 'unknown';
 
-export const OFFLINE_THRESHOLD_MS = 24 * 60 * 60 * 1000; // 24 giờ — phù hợp khi hardware không update liên tục
+// 5 phút — ngưỡng coi là offline nếu không có tín hiệu GPS mới
+export const OFFLINE_THRESHOLD_MS = 5 * 60 * 1000;
+
+// 24 giờ — ngưỡng fallback cho last_ping (hardware không gửi ping liên tục)
+export const LAST_PING_THRESHOLD_MS = 24 * 60 * 60 * 1000;
 
 export function normalizeLastPing(lastUpdate?: number, lastPingSeconds?: number): number | null {
   if (lastPingSeconds) return lastPingSeconds * 1000;
@@ -8,20 +12,37 @@ export function normalizeLastPing(lastUpdate?: number, lastPingSeconds?: number)
   return null;
 }
 
+/**
+ * Xác định trạng thái kết nối thiết bị.
+ *
+ * Ưu tiên theo thứ tự:
+ * 1. lastUpdate (gps.updated_at * 1000) — realtime nhất, threshold 5 phút
+ * 2. lastPingSeconds (info.last_ping)   — hardware ping, threshold 24 giờ
+ * 3. rawStatus từ Firebase info.status  — fallback cuối
+ */
 export function getConnectionStatus(
   lastUpdate?: number,
   lastPingSeconds?: number,
   rawStatus?: string,
-  thresholdMs = OFFLINE_THRESHOLD_MS,
 ): ConnectionStatus {
-  const lastPingMs = normalizeLastPing(lastUpdate, lastPingSeconds);
-
-  if (lastPingMs) {
-    const stale = Date.now() - lastPingMs > thresholdMs;
-    if (stale) return 'offline';
-    return 'online';
+  // Ưu tiên GPS updated_at (realtime từ ESP32)
+  if (lastUpdate && lastUpdate > 0) {
+    const stale = Date.now() - lastUpdate > OFFLINE_THRESHOLD_MS;
+    if (!stale) return 'online';
+    // GPS stale nhưng vẫn kiểm tra last_ping
   }
 
+  // Kiểm tra last_ping (hardware heartbeat, threshold rộng hơn)
+  if (lastPingSeconds && lastPingSeconds > 0) {
+    const lastPingMs = lastPingSeconds * 1000;
+    if (Date.now() - lastPingMs <= LAST_PING_THRESHOLD_MS) return 'online';
+    return 'offline';
+  }
+
+  // Nếu lastUpdate tồn tại nhưng stale (>5 phút)
+  if (lastUpdate && lastUpdate > 0) return 'offline';
+
+  // Fallback về rawStatus
   if (rawStatus === 'online' || rawStatus === 'active') return 'online';
   if (rawStatus === 'offline' || rawStatus === 'inactive') return 'offline';
   return 'unknown';

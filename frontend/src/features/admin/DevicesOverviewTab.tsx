@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Cpu, RefreshCw, Radio, Activity, WifiOff, Search, LayoutGrid, List } from 'lucide-react';
+import { Cpu, RefreshCw, Radio, Activity, WifiOff, Search, LayoutGrid, List, Settings } from 'lucide-react';
 import { listDevices, getDeviceInfo, DeviceListItem, DeviceInfo } from '../../services/api';
 import DeviceCard from '../dashboard/DeviceCard';
+import AdminDeviceSettingsModal from './AdminDeviceSettingsModal';
 
 export default function DevicesOverviewTab() {
   const [devices, setDevices] = useState<DeviceListItem[]>([]);
@@ -13,6 +14,7 @@ export default function DevicesOverviewTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'online' | 'offline'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [settingsDevice, setSettingsDevice] = useState<DeviceListItem | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -24,7 +26,8 @@ export default function DevicesOverviewTab() {
       await Promise.all(
         list.map(async (d) => {
           try {
-            details[d.id] = await getDeviceInfo(d.id);
+            const info = await getDeviceInfo(d.id);
+            if (info) details[d.id] = info;
           } catch {
             // skip
           }
@@ -62,6 +65,11 @@ export default function DevicesOverviewTab() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300 max-w-7xl mx-auto">
+
+      {/* Device Settings Modal */}
+      {settingsDevice && (
+        <AdminDeviceSettingsModal device={settingsDevice} onClose={() => setSettingsDevice(null)} />
+      )}
 
       {/* ─── Header ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-5">
@@ -244,19 +252,40 @@ export default function DevicesOverviewTab() {
           }>
             {filteredDevices.map(d =>
               deviceDetails[d.id] ? (
-                <DeviceCard key={d.id} device={deviceDetails[d.id]} viewMode={viewMode} />
+                <div key={d.id} className="relative group">
+                  <DeviceCard device={deviceDetails[d.id]} viewMode={viewMode} />
+                  {/* Settings button overlay */}
+                  <button
+                    onClick={() => setSettingsDevice(d)}
+                    className="absolute top-3 right-3 z-10 flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/90 backdrop-blur-sm px-2.5 py-1.5 text-[10px] font-bold text-slate-600 shadow-sm opacity-0 group-hover:opacity-100 transition-all hover:bg-[#00b494]/10 hover:border-[#00b494]/40 hover:text-[#00b494]"
+                    title="Cài đặt thiết bị"
+                  >
+                    <Settings className="h-3 w-3" />
+                    Cài đặt
+                  </button>
+                </div>
               ) : (
-                <div key={d.id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-                    <Cpu className="h-5 w-5 text-slate-300" />
+                <div key={d.id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                      <Cpu className="h-5 w-5 text-slate-300" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-800 truncate">{d.name}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5 font-mono truncate">{d.id}</p>
+                      <span className="mt-1.5 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                        {d.status}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-800">{d.name}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{d.id}</p>
-                    <span className="mt-1.5 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                      {d.status}
-                    </span>
-                  </div>
+                  <button
+                    onClick={() => setSettingsDevice(d)}
+                    className="flex items-center gap-1.5 rounded-xl border border-[#00b494]/30 bg-[#00b494]/10 px-3 py-1.5 text-[10px] font-bold text-[#00b494] hover:bg-[#00b494]/20 transition-colors shrink-0"
+                    title="Cài đặt thiết bị"
+                  >
+                    <Settings className="h-3 w-3" />
+                    Cài đặt
+                  </button>
                 </div>
               )
             )}

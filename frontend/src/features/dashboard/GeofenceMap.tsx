@@ -28,7 +28,7 @@ function ClickHandler({ active, onPick }: { active: boolean; onPick: (lat: numbe
     return null;
 }
 
-const DEFAULT_CENTER: [number, number] = [10.8045, 106.738];
+const DEFAULT_CENTER: [number, number] = [16.0, 108.0]; // trung tâm VN, không có GPS thực
 
 export default function GeofenceMap({ zones, currentPos, pickingCenter, onPickCenter }: Props) {
     const center: [number, number] = currentPos ? [currentPos.lat, currentPos.lng] : DEFAULT_CENTER;

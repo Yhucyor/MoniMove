@@ -28,10 +28,17 @@ interface MiniMapProps {
   lng?: number;
 }
 
-const DEFAULT_LAT = 10.8045;
-const DEFAULT_LNG = 106.738;
+const DEFAULT_LAT = 0;
+const DEFAULT_LNG = 0;
 
 export default function MiniMap({ deviceId, lat = DEFAULT_LAT, lng = DEFAULT_LNG }: MiniMapProps) {
+  // Không hiển thị map nếu chưa có tọa độ thực
+  if (!lat || !lng) return (
+    <div className="h-full w-full flex items-center justify-center bg-slate-100 text-xs text-slate-400 font-medium rounded-xl">
+      Chưa có tín hiệu GPS
+    </div>
+  );
+
   const center: [number, number] = [lat, lng];
 
   return (
