@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import { useMyDevices } from './useMyDevices';
-import { useNotifications } from '../contexts/NotificationContext';
-import { getConnectionStatus } from '../utils/deviceStatus';
-import { subscribeDeviceInfo } from '../services/firebaseRealtime';
+import { useEffect, useRef } from "react";
+import { useMyDevices } from "./useMyDevices";
+import { useNotifications } from "../contexts/NotificationContext";
+import { getConnectionStatus } from "../utils/deviceStatus";
+import { subscribeDeviceInfo } from "../services/firebaseRealtime";
 
 /**
  * useDeviceStatusMonitor
@@ -24,7 +24,11 @@ export function useDeviceStatusMonitor() {
 
     const unsubscribes = devices.map((d) =>
       subscribeDeviceInfo(d.id, (info) => {
-        const conn = getConnectionStatus(info.lastUpdate, undefined, info.status);
+        const conn = getConnectionStatus(
+          info.lastUpdate,
+          undefined,
+          info.status,
+        );
 
         // Lần đầu nhận data — set trạng thái ban đầu, không notify
         if (!initializedRef.current.has(d.id)) {
@@ -37,17 +41,17 @@ export function useDeviceStatusMonitor() {
 
         // Chỉ notify khi trạng thái thực sự thay đổi
         if (prev !== conn) {
-          if (conn === 'offline') {
+          if (conn === "offline") {
             notify({
-              type: 'offline',
-              title: '📡 Thiết bị ngoại tuyến',
+              type: "offline",
+              title: "📡 Thiết bị ngoại tuyến",
               message: `${info.name || d.id} mất kết nối. Kiểm tra thiết bị hoặc mạng.`,
               deviceId: d.id,
             });
-          } else if (conn === 'online' && prev === 'offline') {
+          } else if (conn === "online" && prev === "offline") {
             notify({
-              type: 'success',
-              title: '✅ Thiết bị kết nối lại',
+              type: "success",
+              title: "✅ Thiết bị kết nối lại",
               message: `${info.name || d.id} đã trực tuyến trở lại.`,
               deviceId: d.id,
             });

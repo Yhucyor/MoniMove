@@ -1,28 +1,28 @@
-import 'dotenv/config';
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { AppModule } from './app.module';
+import "dotenv/config";
+import { NestFactory } from "@nestjs/core";
+import { ValidationPipe } from "@nestjs/common";
+import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
+import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // ── Global prefix ────────────────────────────────────────────────────────
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix("api");
 
   // ── CORS ─────────────────────────────────────────────────────────────────
   const frontendUrl = process.env.FRONTEND_URL;
   const origins = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:3001',
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
   ];
-  if (frontendUrl) origins.push(frontendUrl.replace(/\/$/, ''));
+  if (frontendUrl) origins.push(frontendUrl.replace(/\/$/, ""));
 
   app.enableCors({
     origin: origins,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   });
 
   // ── Global Validation Pipe ────────────────────────────────────────────────
@@ -37,43 +37,50 @@ async function bootstrap() {
 
   // ── Swagger API Documentation ─────────────────────────────────────────────
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('MoniMove API')
+    .setTitle("MoveMonitor API")
     .setDescription(
-      'Hệ thống IoT giám sát hành trình, phát hiện va chạm và cảnh báo thời gian thực.\n\n' +
-      '**Authentication:** Sử dụng Firebase ID Token trong header `Authorization: Bearer <token>`',
+      "Hệ thống IoT giám sát hành trình, phát hiện va chạm và cảnh báo thời gian thực.\n\n" +
+        "**Authentication:** Sử dụng Firebase ID Token trong header `Authorization: Bearer <token>`",
     )
-    .setVersion('2.0.0')
+    .setVersion("2.0.0")
     .addBearerAuth(
-      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: 'Firebase ID Token' },
-      'firebase-token',
+      {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        description: "Firebase ID Token",
+      },
+      "firebase-token",
     )
-    .addTag('auth', 'Xác thực Firebase và quản lý phiên đăng nhập')
-    .addTag('devices', 'Quản lý và giám sát thiết bị IoT')
-    .addTag('alerts', 'Nhật ký cảnh báo và sự cố')
-    .addTag('users', 'Quản lý người dùng và phân quyền')
-    .addTag('settings', 'Cài đặt thiết bị (ngưỡng cảnh báo, SOS email...)')
-    .addTag('realtime', 'WebSocket events realtime')
+    .addTag("auth", "Xác thực Firebase và quản lý phiên đăng nhập")
+    .addTag("devices", "Quản lý và giám sát thiết bị IoT")
+    .addTag("alerts", "Nhật ký cảnh báo và sự cố")
+    .addTag("users", "Quản lý người dùng và phân quyền")
+    .addTag("settings", "Cài đặt thiết bị (ngưỡng cảnh báo, SOS email...)")
+    .addTag("realtime", "WebSocket events realtime")
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document, {
+  SwaggerModule.setup("api/docs", app, document, {
     swaggerOptions: {
       persistAuthorization: true,
-      docExpansion: 'list',
+      docExpansion: "list",
       filter: true,
-      tagsSorter: 'alpha',
+      tagsSorter: "alpha",
     },
-    customSiteTitle: 'MoniMove API Docs',
+    customSiteTitle: "MoveMonitor API Docs",
   });
 
   // ── Start ─────────────────────────────────────────────────────────────────
   const port = process.env.PORT ?? 3001;
-  await app.listen(port, '0.0.0.0');
+  await app.listen(port, "0.0.0.0");
 
-  console.log(`\n🚀 MoniMove Backend running at: http://localhost:${port}`);
+  console.log(`\n🚀 MoveMonitor Backend running at: http://localhost:${port}`);
   console.log(`📡 REST API: http://localhost:${port}/api`);
   console.log(`📖 Swagger Docs: http://localhost:${port}/api/docs`);
   console.log(`⚡ WebSocket: ws://localhost:${port}/events`);
-  console.log(`📧 Email alerts: ${process.env.SMTP_USER ? '✅ Configured' : '⚠️ Not configured'}\n`);
+  console.log(
+    `📧 Email alerts: ${process.env.SMTP_USER ? "✅ Configured" : "⚠️ Not configured"}\n`,
+  );
 }
 bootstrap();

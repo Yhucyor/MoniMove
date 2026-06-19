@@ -16,42 +16,51 @@ class CreateAlertDto {
 }
 exports.CreateAlertDto = CreateAlertDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 'DEVICE_ESP32_01', description: 'ID thiết bị IoT' }),
+    (0, swagger_1.ApiProperty)({ example: "DEVICE_ESP32_01", description: "ID thiết bị IoT" }),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreateAlertDto.prototype, "deviceId", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 'Ngã đổ', description: 'Loại cảnh báo' }),
+    (0, swagger_1.ApiProperty)({ example: "Ngã đổ", description: "Loại cảnh báo" }),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreateAlertDto.prototype, "alertType", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 'Thiết bị bị ngã với góc nghiêng 65°', description: 'Nội dung cảnh báo' }),
+    (0, swagger_1.ApiProperty)({
+        example: "Thiết bị bị ngã với góc nghiêng 65°",
+        description: "Nội dung cảnh báo",
+    }),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreateAlertDto.prototype, "message", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ example: 'critical', enum: ['critical', 'warning', 'info'] }),
+    (0, swagger_1.ApiPropertyOptional)({
+        example: "critical",
+        enum: ["critical", "warning", "info"],
+    }),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsIn)(['critical', 'warning', 'info']),
+    (0, class_validator_1.IsIn)(["critical", "warning", "info"]),
     __metadata("design:type", String)
 ], CreateAlertDto.prototype, "severity", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ example: 1718000000000, description: 'Unix timestamp ms' }),
+    (0, swagger_1.ApiPropertyOptional)({
+        example: 1718000000000,
+        description: "Unix timestamp ms",
+    }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], CreateAlertDto.prototype, "timestamp", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: 'Tọa độ GPS khi xảy ra sự cố' }),
+    (0, swagger_1.ApiPropertyOptional)({ description: "Tọa độ GPS khi xảy ra sự cố" }),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Object)
 ], CreateAlertDto.prototype, "location", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: 'Email SOS để gửi thông báo khẩn cấp' }),
+    (0, swagger_1.ApiPropertyOptional)({ description: "Email SOS để gửi thông báo khẩn cấp" }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)

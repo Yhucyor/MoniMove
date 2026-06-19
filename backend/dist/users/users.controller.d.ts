@@ -1,6 +1,6 @@
-import { UsersService } from './users.service';
-import { UpdateRoleDto, UpdateDevicesDto } from '../common/dto/update-user.dto';
-import type { AuthUser } from '../common/types/auth-user.interface';
+import { UsersService } from "./users.service";
+import { UpdateRoleDto, UpdateDevicesDto } from "../common/dto/update-user.dto";
+import type { AuthUser } from "../common/types/auth-user.interface";
 export declare class UsersController {
     private readonly usersService;
     constructor(usersService: UsersService);

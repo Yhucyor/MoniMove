@@ -3,7 +3,7 @@ export interface AuthUser {
   email: string;
   name: string;
   avatar: string;
-  role: 'user' | 'admin';
+  role: "user" | "admin";
   deviceIds: string[];
 }
 
@@ -11,7 +11,7 @@ export interface UserProfile {
   email: string;
   name: string;
   avatar: string;
-  role: 'user' | 'admin';
+  role: "user" | "admin";
   deviceIds: string[];
   createdAt: string;
 }

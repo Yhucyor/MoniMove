@@ -17,25 +17,26 @@ let FirebaseService = FirebaseService_1 = class FirebaseService {
     }
     onModuleInit() {
         if (admin.apps.length === 0) {
-            this.logger.log('Initializing Firebase Admin SDK with credentials...');
+            this.logger.log("Initializing Firebase Admin SDK with credentials...");
             try {
-                const serviceAccountPath = path.resolve(__dirname, '..', 'config', 'firebase-service-account.json');
+                const serviceAccountPath = path.resolve(__dirname, "..", "config", "firebase-service-account.json");
                 admin.initializeApp({
                     credential: admin.credential.cert(serviceAccountPath),
-                    databaseURL: process.env.FIREBASE_DATABASE_URL || 'https://monitoring-d6063-default-rtdb.firebaseio.com',
+                    databaseURL: process.env.FIREBASE_DATABASE_URL ||
+                        "https://monitoring-d6063-default-rtdb.firebaseio.com",
                 });
-                this.logger.log('✅ Firebase Admin SDK initialized successfully with service account file');
+                this.logger.log("✅ Firebase Admin SDK initialized successfully with service account file");
             }
             catch (error) {
-                this.logger.error('❌ Failed to initialize Firebase Admin SDK:', error);
+                this.logger.error("❌ Failed to initialize Firebase Admin SDK:", error);
                 throw error;
             }
         }
         else {
-            this.logger.log('Firebase Admin SDK already initialized');
+            this.logger.log("Firebase Admin SDK already initialized");
         }
         this.db = admin.firestore();
-        this.logger.log('Firestore Database initialized successfully.');
+        this.logger.log("Firestore Database initialized successfully.");
     }
     getFirestore() {
         return this.db;
@@ -45,17 +46,17 @@ let FirebaseService = FirebaseService_1 = class FirebaseService {
             return await admin.auth().verifyIdToken(token);
         }
         catch (error) {
-            this.logger.error('Xác thực Firebase Token thất bại:', error);
+            this.logger.error("Xác thực Firebase Token thất bại:", error);
             throw error;
         }
     }
     async getUserRole(email, name, avatar) {
         try {
-            const userRef = this.db.collection('users').doc(email);
+            const userRef = this.db.collection("users").doc(email);
             const userDoc = await userRef.get();
             if (userDoc.exists) {
                 const userData = userDoc.data();
-                const role = userData?.role || 'user';
+                const role = userData?.role || "user";
                 this.logger.log(`[DB] Người dùng cũ đăng nhập: ${email}. Quyền: ${role.toUpperCase()}`);
                 return role;
             }
@@ -64,33 +65,33 @@ let FirebaseService = FirebaseService_1 = class FirebaseService {
                     email,
                     name,
                     avatar,
-                    role: 'user',
+                    role: "user",
                     deviceIds: [],
                     createdAt: new Date().toISOString(),
                 };
                 await userRef.set(newUserData);
                 this.logger.log(`[DB] Tạo bản ghi mới cho: ${email} — role: USER`);
-                return 'user';
+                return "user";
             }
         }
         catch (error) {
             this.logger.error(`Lỗi truy xuất User Firestore [${email}]:`, error);
-            return 'user';
+            return "user";
         }
     }
     async getUserProfile(email) {
         if (!email)
             return null;
         try {
-            const userDoc = await this.db.collection('users').doc(email).get();
+            const userDoc = await this.db.collection("users").doc(email).get();
             if (!userDoc.exists)
                 return null;
             const data = userDoc.data();
             return {
                 email: data?.email || email,
-                name: data?.name || 'Người dùng IoT',
-                avatar: data?.avatar || '',
-                role: data?.role === 'admin' ? 'admin' : 'user',
+                name: data?.name || "Người dùng IoT",
+                avatar: data?.avatar || "",
+                role: data?.role === "admin" ? "admin" : "user",
                 deviceIds: Array.isArray(data?.deviceIds) ? data.deviceIds : [],
                 createdAt: data?.createdAt || new Date().toISOString(),
             };
@@ -101,21 +102,21 @@ let FirebaseService = FirebaseService_1 = class FirebaseService {
         }
     }
     async getAllUsers() {
-        const snapshot = await this.db.collection('users').get();
+        const snapshot = await this.db.collection("users").get();
         return snapshot.docs.map((doc) => {
             const data = doc.data();
             return {
                 email: data.email || doc.id,
-                name: data.name || 'Người dùng IoT',
-                avatar: data.avatar || '',
-                role: data.role === 'admin' ? 'admin' : 'user',
+                name: data.name || "Người dùng IoT",
+                avatar: data.avatar || "",
+                role: data.role === "admin" ? "admin" : "user",
                 deviceIds: Array.isArray(data.deviceIds) ? data.deviceIds : [],
-                createdAt: data.createdAt || '',
+                createdAt: data.createdAt || "",
             };
         });
     }
     async updateUserRole(email, role) {
-        const userRef = this.db.collection('users').doc(email);
+        const userRef = this.db.collection("users").doc(email);
         const userDoc = await userRef.get();
         if (!userDoc.exists)
             return null;
@@ -123,7 +124,7 @@ let FirebaseService = FirebaseService_1 = class FirebaseService {
         return this.getUserProfile(email);
     }
     async updateUserDevices(email, deviceIds) {
-        const userRef = this.db.collection('users').doc(email);
+        const userRef = this.db.collection("users").doc(email);
         const userDoc = await userRef.get();
         if (!userDoc.exists)
             return null;
@@ -131,7 +132,7 @@ let FirebaseService = FirebaseService_1 = class FirebaseService {
         return this.getUserProfile(email);
     }
     async deleteUser(email) {
-        const userRef = this.db.collection('users').doc(email);
+        const userRef = this.db.collection("users").doc(email);
         const userDoc = await userRef.get();
         if (!userDoc.exists)
             return false;
@@ -139,7 +140,7 @@ let FirebaseService = FirebaseService_1 = class FirebaseService {
         return true;
     }
     canAccessDevice(user, deviceId) {
-        if (user.role === 'admin')
+        if (user.role === "admin")
             return true;
         return user.deviceIds.includes(deviceId);
     }

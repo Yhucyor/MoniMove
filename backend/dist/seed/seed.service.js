@@ -14,7 +14,7 @@ let SeedService = SeedService_1 = class SeedService {
         this.logger = new common_1.Logger(SeedService_1.name);
     }
     async onModuleInit() {
-        this.logger.log('SeedService: no seed data configured.');
+        this.logger.log("SeedService: no seed data configured.");
     }
 };
 exports.SeedService = SeedService;

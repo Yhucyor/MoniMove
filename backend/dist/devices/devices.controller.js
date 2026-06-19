@@ -31,7 +31,7 @@ let DevicesController = class DevicesController {
     }
     async listDevices(user) {
         const allDevices = await this.devicesService.listAllDevices();
-        if (user.role === 'admin')
+        if (user.role === "admin")
             return allDevices;
         return allDevices.filter((d) => user.deviceIds.includes(d.id));
     }
@@ -73,63 +73,86 @@ let DevicesController = class DevicesController {
 exports.DevicesController = DevicesController;
 __decorate([
     (0, common_1.Get)(),
-    (0, swagger_1.ApiOperation)({ summary: 'Danh sách thiết bị', description: 'Admin thấy tất cả, User thấy thiết bị được cấp quyền' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Danh sách thiết bị IoT' }),
+    (0, swagger_1.ApiOperation)({
+        summary: "Danh sách thiết bị",
+        description: "Admin thấy tất cả, User thấy thiết bị được cấp quyền",
+    }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: "Danh sách thiết bị IoT" }),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], DevicesController.prototype, "listDevices", null);
 __decorate([
-    (0, common_1.Get)(':deviceId'),
-    (0, swagger_1.ApiOperation)({ summary: 'Chi tiết thiết bị', description: 'Bao gồm GPS, IMU, battery, trạng thái kết nối' }),
-    (0, swagger_1.ApiParam)({ name: 'deviceId', example: 'DEVICE_ESP32_01' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Thông tin đầy đủ của thiết bị' }),
-    (0, swagger_1.ApiResponse)({ status: 404, description: 'Không tìm thấy thiết bị' }),
-    __param(0, (0, common_1.Param)('deviceId')),
+    (0, common_1.Get)(":deviceId"),
+    (0, swagger_1.ApiOperation)({
+        summary: "Chi tiết thiết bị",
+        description: "Bao gồm GPS, IMU, battery, trạng thái kết nối",
+    }),
+    (0, swagger_1.ApiParam)({ name: "deviceId", example: "DEVICE_ESP32_01" }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: "Thông tin đầy đủ của thiết bị" }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: "Không tìm thấy thiết bị" }),
+    __param(0, (0, common_1.Param)("deviceId")),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], DevicesController.prototype, "getDevice", null);
 __decorate([
-    (0, common_1.Get)(':deviceId/position'),
-    (0, swagger_1.ApiOperation)({ summary: 'Vị trí GPS hiện tại', description: 'Tọa độ mới nhất của thiết bị' }),
-    (0, swagger_1.ApiParam)({ name: 'deviceId', example: 'DEVICE_ESP32_01' }),
-    __param(0, (0, common_1.Param)('deviceId')),
+    (0, common_1.Get)(":deviceId/position"),
+    (0, swagger_1.ApiOperation)({
+        summary: "Vị trí GPS hiện tại",
+        description: "Tọa độ mới nhất của thiết bị",
+    }),
+    (0, swagger_1.ApiParam)({ name: "deviceId", example: "DEVICE_ESP32_01" }),
+    __param(0, (0, common_1.Param)("deviceId")),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], DevicesController.prototype, "getLatestPosition", null);
 __decorate([
-    (0, common_1.Get)(':deviceId/route'),
-    (0, swagger_1.ApiOperation)({ summary: 'Lộ trình di chuyển', description: 'Tập hợp các waypoints từ lịch sử GPS' }),
-    (0, swagger_1.ApiParam)({ name: 'deviceId', example: 'DEVICE_ESP32_01' }),
-    __param(0, (0, common_1.Param)('deviceId')),
+    (0, common_1.Get)(":deviceId/route"),
+    (0, swagger_1.ApiOperation)({
+        summary: "Lộ trình di chuyển",
+        description: "Tập hợp các waypoints từ lịch sử GPS",
+    }),
+    (0, swagger_1.ApiParam)({ name: "deviceId", example: "DEVICE_ESP32_01" }),
+    __param(0, (0, common_1.Param)("deviceId")),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], DevicesController.prototype, "getRoute", null);
 __decorate([
-    (0, common_1.Get)(':deviceId/history'),
-    (0, swagger_1.ApiOperation)({ summary: 'Lịch sử GPS', description: 'Trả về các điểm GPS trong khoảng thời gian' }),
-    (0, swagger_1.ApiParam)({ name: 'deviceId', example: 'DEVICE_ESP32_01' }),
-    (0, swagger_1.ApiQuery)({ name: 'start', description: 'Unix timestamp ms (bắt đầu)', example: 1718000000000 }),
-    (0, swagger_1.ApiQuery)({ name: 'end', description: 'Unix timestamp ms (kết thúc)', example: 1718086400000 }),
-    __param(0, (0, common_1.Param)('deviceId')),
-    __param(1, (0, common_1.Query)('start')),
-    __param(2, (0, common_1.Query)('end')),
+    (0, common_1.Get)(":deviceId/history"),
+    (0, swagger_1.ApiOperation)({
+        summary: "Lịch sử GPS",
+        description: "Trả về các điểm GPS trong khoảng thời gian",
+    }),
+    (0, swagger_1.ApiParam)({ name: "deviceId", example: "DEVICE_ESP32_01" }),
+    (0, swagger_1.ApiQuery)({
+        name: "start",
+        description: "Unix timestamp ms (bắt đầu)",
+        example: 1718000000000,
+    }),
+    (0, swagger_1.ApiQuery)({
+        name: "end",
+        description: "Unix timestamp ms (kết thúc)",
+        example: 1718086400000,
+    }),
+    __param(0, (0, common_1.Param)("deviceId")),
+    __param(1, (0, common_1.Query)("start")),
+    __param(2, (0, common_1.Query)("end")),
     __param(3, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String, String, Object]),
     __metadata("design:returntype", Promise)
 ], DevicesController.prototype, "getHistory", null);
 exports.DevicesController = DevicesController = __decorate([
-    (0, swagger_1.ApiTags)('devices'),
-    (0, swagger_1.ApiBearerAuth)('firebase-token'),
-    (0, common_1.Controller)('devices'),
+    (0, swagger_1.ApiTags)("devices"),
+    (0, swagger_1.ApiBearerAuth)("firebase-token"),
+    (0, common_1.Controller)("devices"),
     (0, common_1.UseGuards)(firebase_auth_guard_1.FirebaseAuthGuard),
     __metadata("design:paramtypes", [devices_service_1.DevicesService,
         firebase_service_1.FirebaseService])

@@ -21,20 +21,20 @@ let FirebaseAuthGuard = FirebaseAuthGuard_1 = class FirebaseAuthGuard {
     async canActivate(context) {
         const request = context.switchToHttp().getRequest();
         const authHeader = request.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            throw new common_1.UnauthorizedException('Không tìm thấy token xác thực hoặc sai định dạng');
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            throw new common_1.UnauthorizedException("Không tìm thấy token xác thực hoặc sai định dạng");
         }
-        const token = authHeader.split(' ')[1];
+        const token = authHeader.split(" ")[1];
         try {
             const decodedToken = await this.firebaseService.verifyIdToken(token);
-            const email = decodedToken.email || '';
+            const email = decodedToken.email || "";
             const profile = await this.firebaseService.getUserProfile(email);
             const authUser = {
                 uid: decodedToken.uid,
                 email,
-                name: profile?.name || decodedToken.name || 'Người dùng IoT',
-                avatar: profile?.avatar || decodedToken.picture || '',
-                role: profile?.role || 'user',
+                name: profile?.name || decodedToken.name || "Người dùng IoT",
+                avatar: profile?.avatar || decodedToken.picture || "",
+                role: profile?.role || "user",
                 deviceIds: profile?.deviceIds || [],
             };
             request.user = authUser;
@@ -42,7 +42,7 @@ let FirebaseAuthGuard = FirebaseAuthGuard_1 = class FirebaseAuthGuard {
         }
         catch (error) {
             this.logger.error(`Xác thực token thất bại: ${error instanceof Error ? error.message : String(error)}`);
-            throw new common_1.UnauthorizedException('Token không hợp lệ hoặc đã hết hạn');
+            throw new common_1.UnauthorizedException("Token không hợp lệ hoặc đã hết hạn");
         }
     }
 };

@@ -12,6 +12,6 @@ export interface DeviceMarker {
   id: string;
   name: string;
   position: [number, number];
-  status: 'online' | 'offline';
+  status: "online" | "offline";
   battery: number;
 }

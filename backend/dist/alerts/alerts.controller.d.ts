@@ -1,9 +1,9 @@
-import { AlertsService } from './alerts.service';
-import { MailService } from '../mail/mail.service';
-import { FirebaseService } from '../firebase/firebase.service';
-import { RealtimeGateway } from '../realtime/realtime.gateway';
-import { CreateAlertDto } from '../common/dto/create-alert.dto';
-import type { AuthUser } from '../common/types/auth-user.interface';
+import { AlertsService } from "./alerts.service";
+import { MailService } from "../mail/mail.service";
+import { FirebaseService } from "../firebase/firebase.service";
+import { RealtimeGateway } from "../realtime/realtime.gateway";
+import { CreateAlertDto } from "../common/dto/create-alert.dto";
+import type { AuthUser } from "../common/types/auth-user.interface";
 export declare class AlertsController {
     private readonly alertsService;
     private readonly mailService;

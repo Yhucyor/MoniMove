@@ -1,36 +1,48 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { RealtimeGateway } from './realtime.gateway';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from "@nestjs/common";
+import { RealtimeGateway } from "./realtime.gateway";
+import { MailService } from "../mail/mail.service";
+import { isEmergency } from "../alerts/alerts.service";
 
 const DB_URL =
   process.env.FIREBASE_RTDB_URL ||
-  'https://monitoring-d6063-default-rtdb.firebaseio.com';
-const DB_SECRET = process.env.FIREBASE_RTDB_SECRET || '';
+  "https://monitoring-d6063-default-rtdb.firebaseio.com";
+const DB_SECRET = process.env.FIREBASE_RTDB_SECRET || "";
 
 // ── Trip detection thresholds ────────────────────────────────────────────────
-const MOVEMENT_SPEED_KMH = 2;          // tốc độ tối thiểu coi là di chuyển
-const MIN_DISTANCE_M = 30;         // hoặc dịch chuyển ≥ 30m (kể cả speed=0)
-const SAVE_INTERVAL_MS = 60_000;     // lưu tối đa 1 điểm/phút khi đang đi
+const MOVEMENT_SPEED_KMH = 2; // tốc độ tối thiểu coi là di chuyển
+const MIN_DISTANCE_M = 30; // hoặc dịch chuyển ≥ 30m (kể cả speed=0)
+const SAVE_INTERVAL_MS = 60_000; // lưu tối đa 1 điểm/phút khi đang đi
 const STOP_TIMEOUT_MS = 5 * 60_000; // dừng ≥ 5 phút → kết thúc trip
 
 /**
  * Haversine distance (metres) giữa 2 toạ độ
  */
-function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): number {
+function haversineM(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number {
   const R = 6_371_000;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLng = ((lng2 - lng1) * Math.PI) / 180;
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLng / 2) ** 2;
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 interface DeviceTripState {
   isInTrip: boolean;
-  lastMovedAt: number;     // ms — lần cuối phát hiện di chuyển
-  lastSavedAt: number;     // ms — lần cuối lưu vào history
+  lastMovedAt: number; // ms — lần cuối phát hiện di chuyển
+  lastSavedAt: number; // ms — lần cuối lưu vào history
   lastSavedLat: number;
   lastSavedLng: number;
 }
@@ -54,7 +66,10 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
   // Trip state per device
   private tripStates = new Map<string, DeviceTripState>();
 
-  constructor(private readonly gateway: RealtimeGateway) { }
+  constructor(
+    private readonly gateway: RealtimeGateway,
+    private readonly mailService: MailService,
+  ) {}
 
   onModuleInit() {
     setTimeout(() => this.startPolling(), 3000);
@@ -65,7 +80,9 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
   }
 
   private startPolling() {
-    this.logger.log('🔄 RTDB Listener started — polling every 3s | Trip detection: ON');
+    this.logger.log(
+      "🔄 RTDB Listener started — polling every 3s | Trip detection: ON",
+    );
     this.pollInterval = setInterval(() => this.poll(), 3000);
     this.poll();
   }
@@ -90,7 +107,11 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
         if (!current) continue;
 
         // ── WebSocket push ───────────────────────────────────────────────
-        const hash = JSON.stringify({ gps: current.gps, mpu: current.mpu6050, bat: current.battery });
+        const hash = JSON.stringify({
+          gps: current.gps,
+          mpu: current.mpu6050,
+          bat: current.battery,
+        });
         const prev = this.lastDeviceSnapshots.get(deviceId);
         if (hash !== prev) {
           this.lastDeviceSnapshots.set(deviceId, hash);
@@ -112,7 +133,7 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
             lng: gps.longitude,
             speed: gps.speed,
             battery: current.battery,
-            status: isOnline ? 'online' : 'offline',
+            status: isOnline ? "online" : "offline",
             isTilted: mpu.is_tilted ?? false,
             timestamp: gps.updated_at ? gps.updated_at * 1000 : Date.now(),
           });
@@ -122,13 +143,13 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
         const gps = current.gps || {};
         const lat = gps.latitude ?? gps.lat;
         const lng = gps.longitude ?? gps.lng;
-        if (typeof lat !== 'number' || typeof lng !== 'number') continue;
+        if (typeof lat !== "number" || typeof lng !== "number") continue;
         if (lat === 0 && lng === 0) continue;
 
         await this.handleTripDetection(deviceId, lat, lng, gps.speed ?? 0);
       }
     } catch (err: any) {
-      this.logger.warn('Device poll error: ' + err.message);
+      this.logger.warn("Device poll error: " + err.message);
     }
   }
 
@@ -155,21 +176,30 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
     const state = this.tripStates.get(deviceId)!;
 
     // ── Kiểm tra có di chuyển không ─────────────────────────────────────────
-    const distFromLastSave = haversineM(state.lastSavedLat, state.lastSavedLng, lat, lng);
-    const isMoving = speed >= MOVEMENT_SPEED_KMH || distFromLastSave >= MIN_DISTANCE_M;
+    const distFromLastSave = haversineM(
+      state.lastSavedLat,
+      state.lastSavedLng,
+      lat,
+      lng,
+    );
+    const isMoving =
+      speed >= MOVEMENT_SPEED_KMH || distFromLastSave >= MIN_DISTANCE_M;
 
     if (isMoving) {
       state.lastMovedAt = now;
 
       if (!state.isInTrip) {
         state.isInTrip = true;
-        this.logger.log(`🚴 [${deviceId}] Trip started — speed=${speed} km/h dist=${distFromLastSave.toFixed(0)}m`);
+        this.logger.log(
+          `🚴 [${deviceId}] Trip started — speed=${speed} km/h dist=${distFromLastSave.toFixed(0)}m`,
+        );
       }
 
       // ── Lưu điểm nếu đủ khoảng thời gian HOẶC đủ khoảng cách ────────────
       const timeSinceLastSave = now - state.lastSavedAt;
       const shouldSaveByTime = timeSinceLastSave >= SAVE_INTERVAL_MS;
-      const shouldSaveByDist = distFromLastSave >= MIN_DISTANCE_M && timeSinceLastSave >= 10_000; // ít nhất 10s
+      const shouldSaveByDist =
+        distFromLastSave >= MIN_DISTANCE_M && timeSinceLastSave >= 10_000; // ít nhất 10s
 
       if (shouldSaveByTime || shouldSaveByDist) {
         await this.saveHistoryPoint(deviceId, lat, lng, speed, now);
@@ -183,7 +213,9 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
         const stoppedDurationMs = now - state.lastMovedAt;
         if (stoppedDurationMs >= STOP_TIMEOUT_MS) {
           state.isInTrip = false;
-          this.logger.log(`🛑 [${deviceId}] Trip ended — stopped for ${Math.round(stoppedDurationMs / 60000)}min`);
+          this.logger.log(
+            `🛑 [${deviceId}] Trip ended — stopped for ${Math.round(stoppedDurationMs / 60000)}min`,
+          );
         }
       }
     }
@@ -199,22 +231,30 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
   ) {
     const now = new Date(nowMs);
     const y = now.getFullYear();
-    const mo = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
+    const mo = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
     const dateKey = `${y}-${mo}-${d}`;
     const timestampSec = Math.floor(nowMs / 1000);
 
-    const url = `${DB_URL}/tracking_system/devices/${deviceId}/history/${dateKey}/${timestampSec}.json${DB_SECRET ? `?auth=${DB_SECRET}` : ''}`;
+    const url = `${DB_URL}/tracking_system/devices/${deviceId}/history/${dateKey}/${timestampSec}.json${DB_SECRET ? `?auth=${DB_SECRET}` : ""}`;
 
     try {
       await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat, lng, latitude: lat, longitude: lng, speed }),
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lat,
+          lng,
+          latitude: lat,
+          longitude: lng,
+          speed,
+        }),
       });
 
-      const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      this.logger.log(`📍 [${deviceId}] Saved ${dateKey} ${hhmm} — (${lat.toFixed(5)}, ${lng.toFixed(5)}) ${speed} km/h`);
+      const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      this.logger.log(
+        `📍 [${deviceId}] Saved ${dateKey} ${hhmm} — (${lat.toFixed(5)}, ${lng.toFixed(5)}) ${speed} km/h`,
+      );
     } catch (err: any) {
       this.logger.warn(`History write error [${deviceId}]: ${err.message}`);
     }
@@ -223,7 +263,9 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
   // ── Poll alerts ───────────────────────────────────────────────────────────
   private async pollAlerts() {
     try {
-      const res = await fetch(`${DB_URL}/tracking_system/alerts.json?auth=${DB_SECRET}`);
+      const res = await fetch(
+        `${DB_URL}/tracking_system/alerts.json?auth=${DB_SECRET}`,
+      );
       if (!res.ok) return;
       const data: Record<string, any> = await res.json();
       if (!data) return;
@@ -235,20 +277,74 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
 
         this.gateway.pushAlert({
           id: alertId,
-          deviceId: alert.deviceId || '',
-          alertType: alert.alertType || alert.type || 'unknown',
-          severity: alert.severity || 'warning',
-          message: alert.message || '',
+          deviceId: alert.deviceId || "",
+          alertType: alert.alertType || alert.type || "unknown",
+          severity: alert.severity || "warning",
+          message: alert.message || "",
           timestamp: alert.timestamp || Date.now(),
           location: alert.location,
         });
 
-        this.logger.log(`🚨 New alert pushed via WS: ${alert.alertType} for ${alert.deviceId}`);
+        this.logger.log(
+          `🚨 New alert pushed via WS: ${alert.alertType} for ${alert.deviceId}`,
+        );
+
+        // Gửi email khẩn cấp nếu là loại nguy hiểm (bởi vì ESP32 write trực tiếp vào Firebase, bỏ qua API)
+        if (alert.alertType && isEmergency(alert.alertType)) {
+          this.processEmergencyEmail({
+            id: alertId,
+            deviceId: alert.deviceId || "Unknown",
+            alertType: alert.alertType,
+            message: alert.message || "",
+            timestamp: alert.timestamp || Date.now(),
+            location: alert.location,
+          });
+        }
       }
 
       this.lastAlertCount = Object.keys(data).length;
     } catch (err: any) {
-      this.logger.warn('Alert poll error: ' + err.message);
+      this.logger.warn("Alert poll error: " + err.message);
+    }
+  }
+
+  /**
+   * Đọc email SOS từ Firebase settings của device
+   * Path: tracking_system/settings/{deviceId}/sos_email
+   */
+  private async getSosEmail(deviceId: string): Promise<string | null> {
+    try {
+      const response = await fetch(
+        `${DB_URL}/tracking_system/settings/${deviceId}/sos_email.json?auth=${DB_SECRET}`,
+      );
+      if (!response.ok) return null;
+      const val = await response.json();
+      return typeof val === "string" && val.includes("@") ? val : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async processEmergencyEmail(alertData: any) {
+    let sosEmail: string | null = null;
+    sosEmail = await this.getSosEmail(alertData.deviceId);
+
+    if (!sosEmail) {
+      sosEmail = process.env.SMTP_USER || null;
+      if (sosEmail) {
+        this.logger.warn(
+          `⚠️ No SOS email for ${alertData.deviceId} — fallback to system email: ${sosEmail}`,
+        );
+      }
+    }
+
+    if (sosEmail) {
+      this.logger.log(
+        `📧 RTDB Listener sending emergency email to: ${sosEmail} (type: ${alertData.alertType})`,
+      );
+      this.mailService.sendEmergencyEmail(sosEmail, alertData).catch((err) => {
+        this.logger.error(`Email failed: ${err.message}`);
+      });
     }
   }
 }

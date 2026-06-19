@@ -1,5 +1,5 @@
-import { FirebaseService } from '../firebase/firebase.service';
-import type { Response } from 'express';
+import { FirebaseService } from "../firebase/firebase.service";
+import type { Response } from "express";
 declare class VerifyTokenDto {
     idToken: string;
 }

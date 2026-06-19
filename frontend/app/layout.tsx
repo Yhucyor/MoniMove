@@ -6,7 +6,7 @@ import { NotificationProvider } from "../src/contexts/NotificationContext";
 import { OfflineSyncProvider } from "../src/contexts/OfflineSyncContext";
 
 export const metadata: Metadata = {
-  title: "MoniMove — IoT Tracking",
+  title: "MoveMonitor — IoT Tracking",
   description: "Hệ thống giám sát hành trình và phát hiện va chạm thời gian thực",
 };
 

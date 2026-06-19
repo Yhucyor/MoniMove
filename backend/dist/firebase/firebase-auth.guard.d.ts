@@ -1,5 +1,5 @@
-import { CanActivate, ExecutionContext } from '@nestjs/common';
-import { FirebaseService } from './firebase.service';
+import { CanActivate, ExecutionContext } from "@nestjs/common";
+import { FirebaseService } from "./firebase.service";
 export declare class FirebaseAuthGuard implements CanActivate {
     private readonly firebaseService;
     private readonly logger;

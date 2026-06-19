@@ -1,6 +1,6 @@
-import { DevicesService } from './devices.service';
-import { FirebaseService } from '../firebase/firebase.service';
-import type { AuthUser } from '../common/types/auth-user.interface';
+import { DevicesService } from "./devices.service";
+import { FirebaseService } from "../firebase/firebase.service";
+import type { AuthUser } from "../common/types/auth-user.interface";
 export declare class DevicesController {
     private readonly devicesService;
     private readonly firebaseService;

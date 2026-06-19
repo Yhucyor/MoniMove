@@ -22,7 +22,10 @@ const firebase_service_1 = require("../firebase/firebase.service");
 class VerifyTokenDto {
 }
 __decorate([
-    (0, swagger_2.ApiProperty)({ description: 'Firebase ID Token nhận từ client sau khi đăng nhập', example: 'eyJhbGciOiJSUzI1NiIs...' }),
+    (0, swagger_2.ApiProperty)({
+        description: "Firebase ID Token nhận từ client sau khi đăng nhập",
+        example: "eyJhbGciOiJSUzI1NiIs...",
+    }),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
@@ -38,18 +41,18 @@ let AuthController = AuthController_1 = class AuthController {
             if (!idToken) {
                 return res.status(common_1.HttpStatus.BAD_REQUEST).json({
                     success: false,
-                    message: 'Thiếu ID Token',
+                    message: "Thiếu ID Token",
                 });
             }
             const decodedToken = await this.firebaseService.verifyIdToken(idToken);
-            const email = decodedToken.email || '';
-            const name = decodedToken.name || 'Người dùng IoT';
-            const avatar = decodedToken.picture || '';
+            const email = decodedToken.email || "";
+            const name = decodedToken.name || "Người dùng IoT";
+            const avatar = decodedToken.picture || "";
             const finalRole = await this.firebaseService.getUserRole(email, name, avatar);
             const profile = await this.firebaseService.getUserProfile(email);
             return res.status(common_1.HttpStatus.OK).json({
                 success: true,
-                message: 'Xác thực thành công',
+                message: "Xác thực thành công",
                 user: {
                     email,
                     name: profile?.name || name,
@@ -60,10 +63,10 @@ let AuthController = AuthController_1 = class AuthController {
             });
         }
         catch (error) {
-            this.logger.error('Auth error:', error);
+            this.logger.error("Auth error:", error);
             return res.status(common_1.HttpStatus.UNAUTHORIZED).json({
                 success: false,
-                message: 'Xác thực thất bại hoặc lỗi kết nối dữ liệu.',
+                message: "Xác thực thất bại hoặc lỗi kết nối dữ liệu.",
             });
         }
     }
@@ -72,23 +75,31 @@ exports.AuthController = AuthController;
 __decorate([
     (0, common_1.Post)(),
     (0, swagger_1.ApiOperation)({
-        summary: 'Xác thực Firebase Token',
-        description: 'Nhận Firebase ID Token từ frontend, xác thực với Firebase Admin SDK và trả về thông tin user + role',
+        summary: "Xác thực Firebase Token",
+        description: "Nhận Firebase ID Token từ frontend, xác thực với Firebase Admin SDK và trả về thông tin user + role",
     }),
     (0, swagger_1.ApiBody)({ type: VerifyTokenDto }),
     (0, swagger_1.ApiResponse)({
         status: 200,
-        description: 'Xác thực thành công — trả về user info và role',
+        description: "Xác thực thành công — trả về user info và role",
         schema: {
             example: {
                 success: true,
-                message: 'Xác thực thành công',
-                user: { email: 'user@example.com', name: 'Nguyễn A', role: 'user', deviceIds: ['DEVICE_ESP32_01'] },
+                message: "Xác thực thành công",
+                user: {
+                    email: "user@example.com",
+                    name: "Nguyễn A",
+                    role: "user",
+                    deviceIds: ["DEVICE_ESP32_01"],
+                },
             },
         },
     }),
-    (0, swagger_1.ApiResponse)({ status: 400, description: 'Thiếu idToken' }),
-    (0, swagger_1.ApiResponse)({ status: 401, description: 'Token không hợp lệ hoặc đã hết hạn' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: "Thiếu idToken" }),
+    (0, swagger_1.ApiResponse)({
+        status: 401,
+        description: "Token không hợp lệ hoặc đã hết hạn",
+    }),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Res)()),
     __metadata("design:type", Function),
@@ -96,8 +107,8 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "verifyToken", null);
 exports.AuthController = AuthController = AuthController_1 = __decorate([
-    (0, swagger_1.ApiTags)('auth'),
-    (0, common_1.Controller)('auth'),
+    (0, swagger_1.ApiTags)("auth"),
+    (0, common_1.Controller)("auth"),
     __metadata("design:paramtypes", [firebase_service_1.FirebaseService])
 ], AuthController);
 //# sourceMappingURL=auth.controller.js.map

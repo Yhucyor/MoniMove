@@ -16,15 +16,18 @@ class UpdateRoleDto {
 }
 exports.UpdateRoleDto = UpdateRoleDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 'admin', enum: ['user', 'admin'] }),
-    (0, class_validator_1.IsIn)(['user', 'admin']),
+    (0, swagger_1.ApiProperty)({ example: "admin", enum: ["user", "admin"] }),
+    (0, class_validator_1.IsIn)(["user", "admin"]),
     __metadata("design:type", String)
 ], UpdateRoleDto.prototype, "role", void 0);
 class UpdateDevicesDto {
 }
 exports.UpdateDevicesDto = UpdateDevicesDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: ['DEVICE_ESP32_01', 'DEVICE_ESP32_02'], type: [String] }),
+    (0, swagger_1.ApiProperty)({
+        example: ["DEVICE_ESP32_01", "DEVICE_ESP32_02"],
+        type: [String],
+    }),
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.IsString)({ each: true }),
     __metadata("design:type", Array)

@@ -1,14 +1,15 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 const markerIcon = L.icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  iconRetinaUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 });
@@ -31,13 +32,18 @@ interface MiniMapProps {
 const DEFAULT_LAT = 0;
 const DEFAULT_LNG = 0;
 
-export default function MiniMap({ deviceId, lat = DEFAULT_LAT, lng = DEFAULT_LNG }: MiniMapProps) {
+export default function MiniMap({
+  deviceId,
+  lat = DEFAULT_LAT,
+  lng = DEFAULT_LNG,
+}: MiniMapProps) {
   // Không hiển thị map nếu chưa có tọa độ thực
-  if (!lat || !lng) return (
-    <div className="h-full w-full flex items-center justify-center bg-slate-100 text-xs text-slate-400 font-medium rounded-xl">
-      Chưa có tín hiệu GPS
-    </div>
-  );
+  if (!lat || !lng)
+    return (
+      <div className="h-full w-full flex items-center justify-center bg-slate-100 text-xs text-slate-400 font-medium rounded-xl">
+        Chưa có tín hiệu GPS
+      </div>
+    );
 
   const center: [number, number] = [lat, lng];
 
@@ -47,7 +53,7 @@ export default function MiniMap({ deviceId, lat = DEFAULT_LAT, lng = DEFAULT_LNG
       zoom={15}
       scrollWheelZoom={false}
       dragging={true}
-      style={{ height: '100%', width: '100%' }}
+      style={{ height: "100%", width: "100%" }}
       className="z-0"
     >
       <TileLayer
@@ -60,8 +66,12 @@ export default function MiniMap({ deviceId, lat = DEFAULT_LAT, lng = DEFAULT_LNG
         <Popup>
           <div className="text-xs font-sans">
             <p className="font-bold text-[#00b494] mb-1">{deviceId}</p>
-            <p className="font-mono text-[10px] text-slate-600">{lat.toFixed(6)}°N</p>
-            <p className="font-mono text-[10px] text-slate-600">{lng.toFixed(6)}°E</p>
+            <p className="font-mono text-[10px] text-slate-600">
+              {lat.toFixed(6)}°N
+            </p>
+            <p className="font-mono text-[10px] text-slate-600">
+              {lng.toFixed(6)}°E
+            </p>
           </div>
         </Popup>
       </Marker>

@@ -7,9 +7,9 @@ import {
   OnGatewayInit,
   MessageBody,
   ConnectedSocket,
-} from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
+} from "@nestjs/websockets";
+import { Server, Socket } from "socket.io";
+import { Logger } from "@nestjs/common";
 
 export interface DeviceUpdateEvent {
   deviceId: string;
@@ -26,7 +26,7 @@ export interface AlertEvent {
   id: string;
   deviceId: string;
   alertType: string;
-  severity: 'critical' | 'warning' | 'info';
+  severity: "critical" | "warning" | "info";
   message: string;
   timestamp: number;
   location?: { lat: number; lng: number };
@@ -34,12 +34,12 @@ export interface AlertEvent {
 
 export interface DeviceStatusEvent {
   deviceId: string;
-  status: 'online' | 'offline';
+  status: "online" | "offline";
   timestamp: number;
 }
 
 /**
- * MoniMove Realtime Gateway — từ MoniMove_v2
+ * MoveMonitor Realtime Gateway — từ MoveMonitor_v2
  * Namespace: /events
  *
  * Events pushed to clients:
@@ -54,16 +54,16 @@ export interface DeviceStatusEvent {
  *   unsubscribe:device — Stop watching a device
  */
 @WebSocketGateway({
-  namespace: '/events',
+  namespace: "/events",
   cors: {
     origin: [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
       ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
     ],
     credentials: true,
   },
-  transports: ['websocket', 'polling'],
+  transports: ["websocket", "polling"],
 })
 export class RealtimeGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
@@ -79,24 +79,29 @@ export class RealtimeGateway
   private connectedCount = 0;
 
   afterInit(server: Server) {
-    this.logger.log('⚡ WebSocket Gateway initialized at /events');
+    this.logger.log("⚡ WebSocket Gateway initialized at /events");
 
     // Heartbeat every 30s
     setInterval(() => {
-      server.emit('system:ping', { ts: Date.now(), clients: this.connectedCount });
+      server.emit("system:ping", {
+        ts: Date.now(),
+        clients: this.connectedCount,
+      });
     }, 30_000);
   }
 
   handleConnection(client: Socket) {
     this.connectedCount++;
     this.clientDeviceMap.set(client.id, new Set());
-    this.logger.log(`Client connected: ${client.id} | Total: ${this.connectedCount}`);
+    this.logger.log(
+      `Client connected: ${client.id} | Total: ${this.connectedCount}`,
+    );
 
     // Send welcome + current stats
-    client.emit('system:connected', {
+    client.emit("system:connected", {
       socketId: client.id,
       ts: Date.now(),
-      message: 'Connected to MoniMove Realtime',
+      message: "Connected to MoveMonitor Realtime",
     });
   }
 
@@ -112,11 +117,13 @@ export class RealtimeGateway
     });
     this.clientDeviceMap.delete(client.id);
 
-    this.logger.log(`Client disconnected: ${client.id} | Total: ${this.connectedCount}`);
+    this.logger.log(
+      `Client disconnected: ${client.id} | Total: ${this.connectedCount}`,
+    );
   }
 
   // ── Client subscribes to a device ─────────────────────────────────────────
-  @SubscribeMessage('subscribe:device')
+  @SubscribeMessage("subscribe:device")
   handleSubscribeDevice(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { deviceId: string },
@@ -133,11 +140,15 @@ export class RealtimeGateway
     // Join room for this device
     client.join(`device:${deviceId}`);
     this.logger.log(`Client ${client.id} subscribed to device ${deviceId}`);
-    client.emit('subscribe:ack', { deviceId, status: 'subscribed', ts: Date.now() });
+    client.emit("subscribe:ack", {
+      deviceId,
+      status: "subscribed",
+      ts: Date.now(),
+    });
   }
 
   // ── Client unsubscribes ────────────────────────────────────────────────────
-  @SubscribeMessage('unsubscribe:device')
+  @SubscribeMessage("unsubscribe:device")
   handleUnsubscribeDevice(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { deviceId: string },
@@ -146,27 +157,31 @@ export class RealtimeGateway
     this.clientDeviceMap.get(client.id)?.delete(deviceId);
     this.deviceClientMap.get(deviceId)?.delete(client.id);
     client.leave(`device:${deviceId}`);
-    client.emit('unsubscribe:ack', { deviceId, status: 'unsubscribed', ts: Date.now() });
+    client.emit("unsubscribe:ack", {
+      deviceId,
+      status: "unsubscribed",
+      ts: Date.now(),
+    });
   }
 
   // ── Server-side push methods (called by services) ─────────────────────────
 
   /** Push device GPS + sensor update to subscribers */
   pushDeviceUpdate(event: DeviceUpdateEvent) {
-    this.server.to(`device:${event.deviceId}`).emit('device:update', event);
+    this.server.to(`device:${event.deviceId}`).emit("device:update", event);
   }
 
   /** Push a new alert to ALL connected clients + device-specific room */
   pushAlert(event: AlertEvent) {
     // Broadcast to everyone (notifications panel)
-    this.server.emit('device:alert', event);
+    this.server.emit("device:alert", event);
     // Also to device-specific room
-    this.server.to(`device:${event.deviceId}`).emit('device:alert', event);
+    this.server.to(`device:${event.deviceId}`).emit("device:alert", event);
   }
 
   /** Push device online/offline status change */
   pushDeviceStatus(event: DeviceStatusEvent) {
-    this.server.emit('device:status', event);
+    this.server.emit("device:status", event);
   }
 
   /** Get number of connected clients */

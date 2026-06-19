@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   createContext,
@@ -7,7 +7,7 @@ import {
   useCallback,
   useEffect,
   ReactNode,
-} from 'react';
+} from "react";
 import {
   AppNotification,
   loadNotifications,
@@ -16,12 +16,12 @@ import {
   showBrowserNotification,
   playNotificationSound,
   requestBrowserNotificationPermission,
-} from '../services/notificationService';
+} from "../services/notificationService";
 
 interface NotificationContextType {
   notifications: AppNotification[];
   unreadCount: number;
-  notify: (partial: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => void;
+  notify: (partial: Omit<AppNotification, "id" | "timestamp" | "read">) => void;
   markRead: (id: string) => void;
   markAllRead: () => void;
   clearAll: () => void;
@@ -43,7 +43,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const notify = useCallback(
-    (partial: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => {
+    (partial: Omit<AppNotification, "id" | "timestamp" | "read">) => {
       const item = createNotification(partial);
       setNotifications((prev) => {
         const next = [item, ...prev].slice(0, 50);
@@ -51,9 +51,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         return next;
       });
 
-      if (partial.type === 'offline' || partial.type === 'error' || partial.type === 'warning') {
-        showBrowserNotification(partial.title, partial.message, partial.deviceId);
-        playNotificationSound(partial.type === 'offline' ? 'offline' : 'alert');
+      if (
+        partial.type === "offline" ||
+        partial.type === "error" ||
+        partial.type === "warning"
+      ) {
+        showBrowserNotification(
+          partial.title,
+          partial.message,
+          partial.deviceId,
+        );
+        playNotificationSound(partial.type === "offline" ? "offline" : "alert");
       }
     },
     [],
@@ -61,7 +69,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const markRead = useCallback(
     (id: string) => {
-      persist(notifications.map((n) => (n.id === id ? { ...n, read: true } : n)));
+      persist(
+        notifications.map((n) => (n.id === id ? { ...n, read: true } : n)),
+      );
     },
     [notifications, persist],
   );
@@ -78,7 +88,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   return (
     <NotificationContext.Provider
-      value={{ notifications, unreadCount, notify, markRead, markAllRead, clearAll }}
+      value={{
+        notifications,
+        unreadCount,
+        notify,
+        markRead,
+        markAllRead,
+        clearAll,
+      }}
     >
       {children}
     </NotificationContext.Provider>
@@ -87,6 +104,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
 export function useNotifications() {
   const ctx = useContext(NotificationContext);
-  if (!ctx) throw new Error('useNotifications requires NotificationProvider');
+  if (!ctx) throw new Error("useNotifications requires NotificationProvider");
   return ctx;
 }

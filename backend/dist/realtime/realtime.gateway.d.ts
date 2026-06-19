@@ -1,5 +1,5 @@
-import { OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit } from "@nestjs/websockets";
+import { Server, Socket } from "socket.io";
 export interface DeviceUpdateEvent {
     deviceId: string;
     lat?: number;
@@ -14,7 +14,7 @@ export interface AlertEvent {
     id: string;
     deviceId: string;
     alertType: string;
-    severity: 'critical' | 'warning' | 'info';
+    severity: "critical" | "warning" | "info";
     message: string;
     timestamp: number;
     location?: {
@@ -24,7 +24,7 @@ export interface AlertEvent {
 }
 export interface DeviceStatusEvent {
     deviceId: string;
-    status: 'online' | 'offline';
+    status: "online" | "offline";
     timestamp: number;
 }
 export declare class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {

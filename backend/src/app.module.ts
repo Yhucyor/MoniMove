@@ -1,18 +1,18 @@
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { FirebaseModule } from './firebase/firebase.module';
-import { DevicesModule } from './devices/devices.module';
-import { AlertsModule } from './alerts/alerts.module';
-import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
-import { SeedModule } from './seed/seed.module';
-import { RealtimeModule } from './realtime/realtime.module';
-import { MailModule } from './mail/mail.module';
-import { SettingsModule } from './settings/settings.module';
+import { Module } from "@nestjs/common";
+import { AppController } from "./app.controller";
+import { AppService } from "./app.service";
+import { FirebaseModule } from "./firebase/firebase.module";
+import { DevicesModule } from "./devices/devices.module";
+import { AlertsModule } from "./alerts/alerts.module";
+import { AuthModule } from "./auth/auth.module";
+import { UsersModule } from "./users/users.module";
+import { SeedModule } from "./seed/seed.module";
+import { RealtimeModule } from "./realtime/realtime.module";
+import { MailModule } from "./mail/mail.module";
+import { SettingsModule } from "./settings/settings.module";
 
 /**
- * AppModule — Root module của MoniMove Backend (Merged v2 + v3)
+ * AppModule — Root module của MoveMonitor Backend (Merged v2 + v3)
  *
  * Modules:
  *  - FirebaseModule   : Firebase Admin SDK, Firestore, Auth Guard

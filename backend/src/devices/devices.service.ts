@@ -1,8 +1,8 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { computeConnectionStatus } from '../common/utils/device-status.util';
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { computeConnectionStatus } from "../common/utils/device-status.util";
 
 /**
- * DevicesService — Merged từ MoniMove_v2 + MoniMove (v3)
+ * DevicesService — Merged từ MoveMonitor_v2 + MoveMonitor (v3)
  *
  * Env vars (unified):
  *   FIREBASE_RTDB_URL    — URL Firebase Realtime Database
@@ -14,8 +14,10 @@ import { computeConnectionStatus } from '../common/utils/device-status.util';
  * Merged: giữ tất cả chức năng v2 (đầy đủ nhất)
  */
 
-const DB_URL = process.env.FIREBASE_RTDB_URL || 'https://monitoring-d6063-default-rtdb.firebaseio.com';
-const DB_SECRET = process.env.FIREBASE_RTDB_SECRET || '';
+const DB_URL =
+  process.env.FIREBASE_RTDB_URL ||
+  "https://monitoring-d6063-default-rtdb.firebaseio.com";
+const DB_SECRET = process.env.FIREBASE_RTDB_SECRET || "";
 
 @Injectable()
 export class DevicesService implements OnModuleInit {
@@ -26,9 +28,19 @@ export class DevicesService implements OnModuleInit {
   }
 
   // ── List All Devices ───────────────────────────────────────────────────────
-  async listAllDevices(): Promise<{ id: string; name: string; status: string; connectionStatus: string; lastPing: number | null }[]> {
+  async listAllDevices(): Promise<
+    {
+      id: string;
+      name: string;
+      status: string;
+      connectionStatus: string;
+      lastPing: number | null;
+    }[]
+  > {
     try {
-      const response = await fetch(`${DB_URL}/tracking_system/devices.json?auth=${DB_SECRET}`);
+      const response = await fetch(
+        `${DB_URL}/tracking_system/devices.json?auth=${DB_SECRET}`,
+      );
       if (!response.ok) throw new Error(`HTTP error ${response.status}`);
       const devicesVal = await response.json();
 
@@ -39,17 +51,25 @@ export class DevicesService implements OnModuleInit {
         const gps = devicesVal[id]?.current_data?.gps || {};
         const lastPing = info.last_ping as number | undefined;
         const gpsUpdatedAt = gps.updated_at as number | undefined;
-        const rawStatus = info.status || 'active';
+        const rawStatus = info.status || "active";
         return {
           id,
           name: info.device_name || info.license_plate || id,
           status: rawStatus,
-          connectionStatus: computeConnectionStatus(lastPing, undefined, rawStatus, gpsUpdatedAt),
+          connectionStatus: computeConnectionStatus(
+            lastPing,
+            undefined,
+            rawStatus,
+            gpsUpdatedAt,
+          ),
           lastPing: lastPing ? lastPing * 1000 : null,
         };
       });
     } catch (error) {
-      this.logger.error('Error listing devices: ' + (error instanceof Error ? error.message : String(error)));
+      this.logger.error(
+        "Error listing devices: " +
+          (error instanceof Error ? error.message : String(error)),
+      );
       return [];
     }
   }
@@ -57,14 +77,20 @@ export class DevicesService implements OnModuleInit {
   // ── Get Single Device ──────────────────────────────────────────────────────
   async getDevice(deviceId: string) {
     try {
-      const response = await fetch(`${DB_URL}/tracking_system/devices/${deviceId}.json?auth=${DB_SECRET}`);
+      const response = await fetch(
+        `${DB_URL}/tracking_system/devices/${deviceId}.json?auth=${DB_SECRET}`,
+      );
       if (!response.ok) throw new Error(`HTTP error ${response.status}`);
       let data = await response.json();
 
       // Fallback: if deviceId does not exist, get the first device
       if (!data) {
-        this.logger.warn(`Device "${deviceId}" not found in database, fetching fallback device...`);
-        const allResponse = await fetch(`${DB_URL}/tracking_system/devices.json?auth=${DB_SECRET}`);
+        this.logger.warn(
+          `Device "${deviceId}" not found in database, fetching fallback device...`,
+        );
+        const allResponse = await fetch(
+          `${DB_URL}/tracking_system/devices.json?auth=${DB_SECRET}`,
+        );
         if (allResponse.ok) {
           const devicesVal = await allResponse.json();
           if (devicesVal) {
@@ -72,7 +98,9 @@ export class DevicesService implements OnModuleInit {
             if (keys.length > 0) {
               deviceId = keys[0];
               data = devicesVal[deviceId];
-              this.logger.log(`Fallback mapped successfully to device ID: "${deviceId}"`);
+              this.logger.log(
+                `Fallback mapped successfully to device ID: "${deviceId}"`,
+              );
             }
           }
         }
@@ -83,16 +111,25 @@ export class DevicesService implements OnModuleInit {
         const gps = data.current_data?.gps || {};
         const lastPing = info.last_ping as number | undefined;
         const gpsUpdatedAt = gps.updated_at as number | undefined;
-        const rawStatus = info.status || 'active';
+        const rawStatus = info.status || "active";
         // lastUpdate: ưu tiên gps.updated_at, fallback last_ping, fallback now
-        const lastUpdate = gpsUpdatedAt ? gpsUpdatedAt * 1000 : (lastPing ? lastPing * 1000 : Date.now());
+        const lastUpdate = gpsUpdatedAt
+          ? gpsUpdatedAt * 1000
+          : lastPing
+            ? lastPing * 1000
+            : Date.now();
         const battery = data.current_data?.battery ?? gps?.battery ?? null;
         return {
           id: deviceId,
           name: info.device_name || deviceId,
           licensePlate: info.license_plate || null,
           status: rawStatus,
-          connectionStatus: computeConnectionStatus(lastPing, undefined, rawStatus, gpsUpdatedAt),
+          connectionStatus: computeConnectionStatus(
+            lastPing,
+            undefined,
+            rawStatus,
+            gpsUpdatedAt,
+          ),
           battery,
           lastUpdate,
           lastPing: lastUpdate,
@@ -100,7 +137,10 @@ export class DevicesService implements OnModuleInit {
         };
       }
     } catch (error) {
-      this.logger.error('Error fetching device from Realtime Database REST API: ' + (error instanceof Error ? error.message : String(error)));
+      this.logger.error(
+        "Error fetching device from Realtime Database REST API: " +
+          (error instanceof Error ? error.message : String(error)),
+      );
     }
     return null;
   }
@@ -108,20 +148,26 @@ export class DevicesService implements OnModuleInit {
   // ── Latest Position ────────────────────────────────────────────────────────
   async getLatestPosition(deviceId: string) {
     try {
-      const response = await fetch(`${DB_URL}/tracking_system/devices/${deviceId}/current_data/gps.json?auth=${DB_SECRET}`);
+      const response = await fetch(
+        `${DB_URL}/tracking_system/devices/${deviceId}/current_data/gps.json?auth=${DB_SECRET}`,
+      );
       if (!response.ok) throw new Error(`HTTP error ${response.status}`);
       let data = await response.json();
 
       // Fallback: check first device
       if (!data) {
-        const allResponse = await fetch(`${DB_URL}/tracking_system/devices.json?auth=${DB_SECRET}`);
+        const allResponse = await fetch(
+          `${DB_URL}/tracking_system/devices.json?auth=${DB_SECRET}`,
+        );
         if (allResponse.ok) {
           const devicesVal = await allResponse.json();
           if (devicesVal) {
             const keys = Object.keys(devicesVal);
             if (keys.length > 0) {
               const fallbackId = keys[0];
-              const gpsResponse = await fetch(`${DB_URL}/tracking_system/devices/${fallbackId}/current_data/gps.json?auth=${DB_SECRET}`);
+              const gpsResponse = await fetch(
+                `${DB_URL}/tracking_system/devices/${fallbackId}/current_data/gps.json?auth=${DB_SECRET}`,
+              );
               if (gpsResponse.ok) {
                 data = await gpsResponse.json();
               }
@@ -140,7 +186,10 @@ export class DevicesService implements OnModuleInit {
         };
       }
     } catch (error) {
-      this.logger.error('Error fetching position from Realtime Database REST API: ' + (error instanceof Error ? error.message : String(error)));
+      this.logger.error(
+        "Error fetching position from Realtime Database REST API: " +
+          (error instanceof Error ? error.message : String(error)),
+      );
     }
     return null;
   }
@@ -148,13 +197,17 @@ export class DevicesService implements OnModuleInit {
   // ── Route (Haversine distance calculation) ─────────────────────────────────
   async getRoute(deviceId: string) {
     try {
-      const response = await fetch(`${DB_URL}/tracking_system/devices/${deviceId}.json?auth=${DB_SECRET}`);
+      const response = await fetch(
+        `${DB_URL}/tracking_system/devices/${deviceId}.json?auth=${DB_SECRET}`,
+      );
       if (!response.ok) throw new Error(`HTTP error ${response.status}`);
       let deviceData = await response.json();
 
       // Fallback: check first device
       if (!deviceData) {
-        const allResponse = await fetch(`${DB_URL}/tracking_system/devices.json?auth=${DB_SECRET}`);
+        const allResponse = await fetch(
+          `${DB_URL}/tracking_system/devices.json?auth=${DB_SECRET}`,
+        );
         if (allResponse.ok) {
           const devicesVal = await allResponse.json();
           if (devicesVal) {
@@ -174,13 +227,13 @@ export class DevicesService implements OnModuleInit {
 
         for (const date of dates) {
           const dateLogs = deviceData.history[date];
-          if (dateLogs && typeof dateLogs === 'object') {
+          if (dateLogs && typeof dateLogs === "object") {
             for (const tsKey of Object.keys(dateLogs)) {
               const point = dateLogs[tsKey];
               // Hỗ trợ cả lat/lng (legacy) và latitude/longitude (hardware ESP32)
               const lat = point?.lat ?? point?.latitude;
               const lng = point?.lng ?? point?.longitude;
-              if (typeof lat === 'number' && typeof lng === 'number') {
+              if (typeof lat === "number" && typeof lng === "number") {
                 allLogs.push({ timestamp: Number(tsKey), lat, lng });
               }
             }
@@ -200,9 +253,10 @@ export class DevicesService implements OnModuleInit {
             const a =
               Math.sin(dLat / 2) ** 2 +
               Math.cos((p1.lat * Math.PI) / 180) *
-              Math.cos((p2.lat * Math.PI) / 180) *
-              Math.sin(dLng / 2) ** 2;
-            distanceM += 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                Math.cos((p2.lat * Math.PI) / 180) *
+                Math.sin(dLng / 2) ** 2;
+            distanceM +=
+              6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
           }
           // Thời gian di chuyển (giây)
           const durationSec =
@@ -219,7 +273,10 @@ export class DevicesService implements OnModuleInit {
         }
       }
     } catch (error) {
-      this.logger.error('Error fetching route from Realtime Database REST API: ' + (error instanceof Error ? error.message : String(error)));
+      this.logger.error(
+        "Error fetching route from Realtime Database REST API: " +
+          (error instanceof Error ? error.message : String(error)),
+      );
     }
 
     return { deviceId, waypoints: [], distance: 0, duration: 0 };
@@ -228,13 +285,17 @@ export class DevicesService implements OnModuleInit {
   // ── History ────────────────────────────────────────────────────────────────
   async getHistory(deviceId: string, start: number, end: number) {
     try {
-      const response = await fetch(`${DB_URL}/tracking_system/devices/${deviceId}/history.json?auth=${DB_SECRET}`);
+      const response = await fetch(
+        `${DB_URL}/tracking_system/devices/${deviceId}/history.json?auth=${DB_SECRET}`,
+      );
       if (!response.ok) throw new Error(`HTTP error ${response.status}`);
       let historyData = await response.json();
 
       // Fallback: check first device
       if (!historyData) {
-        const allResponse = await fetch(`${DB_URL}/tracking_system/devices.json?auth=${DB_SECRET}`);
+        const allResponse = await fetch(
+          `${DB_URL}/tracking_system/devices.json?auth=${DB_SECRET}`,
+        );
         if (allResponse.ok) {
           const devicesVal = await allResponse.json();
           if (devicesVal) {
@@ -250,12 +311,17 @@ export class DevicesService implements OnModuleInit {
       if (historyData) {
         const startNum = Number(start);
         const endNum = Number(end);
-        const logs: { lat: number; lng: number; timestamp: number; speed: number }[] = [];
+        const logs: {
+          lat: number;
+          lng: number;
+          timestamp: number;
+          speed: number;
+        }[] = [];
 
         const dates = Object.keys(historyData);
         for (const date of dates) {
           const dateLogs = historyData[date];
-          if (dateLogs && typeof dateLogs === 'object') {
+          if (dateLogs && typeof dateLogs === "object") {
             for (const tsKey of Object.keys(dateLogs)) {
               const point = dateLogs[tsKey];
               let timestamp = Number(tsKey);
@@ -270,7 +336,12 @@ export class DevicesService implements OnModuleInit {
                 // Hỗ trợ cả lat/lng (legacy) và latitude/longitude (ESP32)
                 const lat = point?.lat ?? point?.latitude ?? 0;
                 const lng = point?.lng ?? point?.longitude ?? 0;
-                logs.push({ lat, lng, timestamp: timestampMs, speed: point?.speed || 0 });
+                logs.push({
+                  lat,
+                  lng,
+                  timestamp: timestampMs,
+                  speed: point?.speed || 0,
+                });
               }
             }
           }
@@ -280,7 +351,10 @@ export class DevicesService implements OnModuleInit {
         return logs;
       }
     } catch (error) {
-      this.logger.error('Error fetching history from Realtime Database REST API: ' + (error instanceof Error ? error.message : String(error)));
+      this.logger.error(
+        "Error fetching history from Realtime Database REST API: " +
+          (error instanceof Error ? error.message : String(error)),
+      );
     }
 
     return [];

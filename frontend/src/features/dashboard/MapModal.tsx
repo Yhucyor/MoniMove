@@ -1,16 +1,18 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import dynamic from 'next/dynamic';
-import { X, ExternalLink, MapPin } from 'lucide-react';
+import { useEffect } from "react";
+import dynamic from "next/dynamic";
+import { X, ExternalLink, MapPin } from "lucide-react";
 
-const LeafletMap = dynamic(() => import('../../map/LeafletMap'), {
+const LeafletMap = dynamic(() => import("../../map/LeafletMap"), {
   ssr: false,
   loading: () => (
     <div className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
       <div className="text-center">
         <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-slate-600 font-semibold text-sm">Đang tải bản đồ...</p>
+        <p className="text-slate-600 font-semibold text-sm">
+          Đang tải bản đồ...
+        </p>
       </div>
     </div>
   ),
@@ -24,29 +26,38 @@ interface MapModalProps {
   onClose: () => void;
 }
 
-export default function MapModal({ deviceId, deviceName, lat, lng, onClose }: MapModalProps) {
+export default function MapModal({
+  deviceId,
+  deviceName,
+  lat,
+  lng,
+  onClose,
+}: MapModalProps) {
   // Đóng modal khi nhấn Escape
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === "Escape") onClose();
     };
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
   }, [onClose]);
 
   // Khóa scroll nền khi modal mở
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, []);
 
   return (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="relative w-full max-w-5xl h-[80vh] bg-white rounded-[28px] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
-
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white shrink-0">
           <div className="flex items-center gap-3">
@@ -54,7 +65,9 @@ export default function MapModal({ deviceId, deviceName, lat, lng, onClose }: Ma
               <MapPin className="w-4 h-4 text-cyan-600" />
             </div>
             <div>
-              <h3 className="font-extrabold text-slate-900 text-sm leading-tight">{deviceName}</h3>
+              <h3 className="font-extrabold text-slate-900 text-sm leading-tight">
+                {deviceName}
+              </h3>
               <p className="text-[11px] text-slate-400 font-mono mt-0.5">
                 {lat.toFixed(6)}°N, {lng.toFixed(6)}°E
               </p>
@@ -83,7 +96,11 @@ export default function MapModal({ deviceId, deviceName, lat, lng, onClose }: Ma
 
         {/* Map area */}
         <div className="flex-1 relative">
-          <LeafletMap deviceId={deviceId} showRoute={true} showSafeZone={false} />
+          <LeafletMap
+            deviceId={deviceId}
+            showRoute={true}
+            showSafeZone={false}
+          />
         </div>
       </div>
     </div>

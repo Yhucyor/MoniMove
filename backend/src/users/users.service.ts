@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { FirebaseService } from '../firebase/firebase.service';
-import { AuthUser } from '../common/types/auth-user.interface';
+import { Injectable } from "@nestjs/common";
+import { FirebaseService } from "../firebase/firebase.service";
+import { AuthUser } from "../common/types/auth-user.interface";
 
 @Injectable()
 export class UsersService {
@@ -15,7 +15,7 @@ export class UsersService {
         avatar: user.avatar,
         role: user.role,
         deviceIds: user.deviceIds,
-        createdAt: '',
+        createdAt: "",
       }
     );
   }
@@ -24,7 +24,7 @@ export class UsersService {
     return this.firebaseService.getAllUsers();
   }
 
-  updateRole(email: string, role: 'user' | 'admin') {
+  updateRole(email: string, role: "user" | "admin") {
     return this.firebaseService.updateUserRole(email, role);
   }
 

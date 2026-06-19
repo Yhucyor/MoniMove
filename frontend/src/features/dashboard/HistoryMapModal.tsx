@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import { X, Navigation, Clock, MapPin } from 'lucide-react';
+import { useEffect, useRef } from "react";
+import { X, Navigation, Clock, MapPin } from "lucide-react";
 
 interface GpsPoint {
   timestamp: number;
@@ -16,19 +16,23 @@ interface HistoryMapModalProps {
   onClose: () => void;
 }
 
-export default function HistoryMapModal({ points, focusIndex, onClose }: HistoryMapModalProps) {
+export default function HistoryMapModal({
+  points,
+  focusIndex,
+  onClose,
+}: HistoryMapModalProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
 
   const focusPoint = points[focusIndex];
 
   useEffect(() => {
-    if (!mapRef.current || typeof window === 'undefined') return;
+    if (!mapRef.current || typeof window === "undefined") return;
 
     // Lazy-load Leaflet
     Promise.all([
-      import('leaflet'),
-      import('leaflet/dist/leaflet.css' as any).catch(() => {}),
+      import("leaflet"),
+      import("leaflet/dist/leaflet.css" as any).catch(() => {}),
     ]).then(([L]) => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
@@ -42,16 +46,16 @@ export default function HistoryMapModal({ points, focusIndex, onClose }: History
       });
       mapInstanceRef.current = map;
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap",
         maxZoom: 19,
       }).addTo(map);
 
       // Vẽ toàn bộ lộ trình
       if (points.length > 1) {
-        const latlngs = points.map(p => [p.lat, p.lng] as [number, number]);
+        const latlngs = points.map((p) => [p.lat, p.lng] as [number, number]);
         L.polyline(latlngs, {
-          color: '#00b494',
+          color: "#00b494",
           weight: 4,
           opacity: 0.8,
         }).addTo(map);
@@ -62,7 +66,7 @@ export default function HistoryMapModal({ points, focusIndex, onClose }: History
         html: `<div style="width:14px;height:14px;background:#22c55e;border-radius:50%;border:2px solid white;box-shadow:0 0 0 2px #22c55e40"></div>`,
         iconSize: [14, 14],
         iconAnchor: [7, 7],
-        className: '',
+        className: "",
       });
 
       // Icon điểm cuối (đỏ)
@@ -70,7 +74,7 @@ export default function HistoryMapModal({ points, focusIndex, onClose }: History
         html: `<div style="width:14px;height:14px;background:#ef4444;border-radius:50%;border:2px solid white;box-shadow:0 0 0 2px #ef444440"></div>`,
         iconSize: [14, 14],
         iconAnchor: [7, 7],
-        className: '',
+        className: "",
       });
 
       // Icon điểm đang focus (xanh dương, lớn hơn)
@@ -80,7 +84,7 @@ export default function HistoryMapModal({ points, focusIndex, onClose }: History
         </div>`,
         iconSize: [20, 20],
         iconAnchor: [10, 10],
-        className: '',
+        className: "",
       });
 
       // Icon điểm thường (xám nhỏ)
@@ -88,7 +92,7 @@ export default function HistoryMapModal({ points, focusIndex, onClose }: History
         html: `<div style="width:8px;height:8px;background:#94a3b8;border-radius:50%;border:1.5px solid white"></div>`,
         iconSize: [8, 8],
         iconAnchor: [4, 4],
-        className: '',
+        className: "",
       });
 
       points.forEach((pt, idx) => {
@@ -96,23 +100,34 @@ export default function HistoryMapModal({ points, focusIndex, onClose }: History
         const isLast = idx === points.length - 1;
         const isFocus = idx === focusIndex;
 
-        const icon = isFocus ? focusIcon : isFirst ? startIcon : isLast ? endIcon : dotIcon;
+        const icon = isFocus
+          ? focusIcon
+          : isFirst
+            ? startIcon
+            : isLast
+              ? endIcon
+              : dotIcon;
 
-        const time = new Date(pt.timestamp).toLocaleTimeString('vi-VN', {
-          hour: '2-digit', minute: '2-digit', second: '2-digit',
+        const time = new Date(pt.timestamp).toLocaleTimeString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
         });
 
         L.marker([pt.lat, pt.lng], { icon })
           .addTo(map)
-          .bindPopup(`
+          .bindPopup(
+            `
             <div style="font-family:sans-serif;font-size:12px;min-width:140px">
-              <b style="color:${isFocus ? '#3b82f6' : isFirst ? '#22c55e' : isLast ? '#ef4444' : '#475569'}">
-                ${isFirst ? '🟢 Xuất phát' : isLast ? '🔴 Điểm cuối' : isFocus ? '🔵 Điểm này' : `Điểm ${idx + 1}`}
+              <b style="color:${isFocus ? "#3b82f6" : isFirst ? "#22c55e" : isLast ? "#ef4444" : "#475569"}">
+                ${isFirst ? "🟢 Xuất phát" : isLast ? "🔴 Điểm cuối" : isFocus ? "🔵 Điểm này" : `Điểm ${idx + 1}`}
               </b><br/>
               🕐 ${time}<br/>
-              ${pt.speed !== undefined ? `🚀 ${pt.speed.toFixed(1)} km/h` : ''}
+              ${pt.speed !== undefined ? `🚀 ${pt.speed.toFixed(1)} km/h` : ""}
             </div>
-          `, { maxWidth: 180 });
+          `,
+            { maxWidth: 180 },
+          );
 
         if (isFocus) {
           setTimeout(() => {
@@ -123,7 +138,9 @@ export default function HistoryMapModal({ points, focusIndex, onClose }: History
 
       // Fit bounds để thấy toàn bộ lộ trình
       if (points.length > 1) {
-        const bounds = L.latLngBounds(points.map(p => [p.lat, p.lng] as [number, number]));
+        const bounds = L.latLngBounds(
+          points.map((p) => [p.lat, p.lng] as [number, number]),
+        );
         map.fitBounds(bounds, { padding: [40, 40] });
       }
     });
@@ -139,7 +156,9 @@ export default function HistoryMapModal({ points, focusIndex, onClose }: History
   return (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
@@ -152,8 +171,8 @@ export default function HistoryMapModal({ points, focusIndex, onClose }: History
               Lộ trình di chuyển
             </h3>
             <p className="text-[12px] text-slate-400 mt-0.5 ml-9">
-              {points.length} điểm GPS •{' '}
-              {new Date(points[0]?.timestamp).toLocaleDateString('vi-VN')}
+              {points.length} điểm GPS •{" "}
+              {new Date(points[0]?.timestamp).toLocaleDateString("vi-VN")}
             </p>
           </div>
 
@@ -162,11 +181,18 @@ export default function HistoryMapModal({ points, focusIndex, onClose }: History
             <div className="text-right">
               <p className="text-[11px] font-bold text-blue-600 flex items-center gap-1 justify-end">
                 <MapPin className="h-3 w-3" />
-                {focusIndex === 0 ? 'Xuất phát' : focusIndex === points.length - 1 ? 'Điểm cuối' : `Điểm ${focusIndex + 1}`}
+                {focusIndex === 0
+                  ? "Xuất phát"
+                  : focusIndex === points.length - 1
+                    ? "Điểm cuối"
+                    : `Điểm ${focusIndex + 1}`}
               </p>
               <p className="text-[11px] text-slate-400 flex items-center gap-1 justify-end">
                 <Clock className="h-3 w-3" />
-                {new Date(focusPoint.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                {new Date(focusPoint.timestamp).toLocaleTimeString("vi-VN", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </p>
             </div>
             <button
@@ -185,19 +211,27 @@ export default function HistoryMapModal({ points, focusIndex, onClose }: History
         <div className="flex items-center gap-4 px-5 py-3 border-t border-slate-100 bg-slate-50/50">
           <div className="flex items-center gap-1.5">
             <div className="h-3 w-3 rounded-full bg-green-500" />
-            <span className="text-[11px] text-slate-500 font-medium">Xuất phát</span>
+            <span className="text-[11px] text-slate-500 font-medium">
+              Xuất phát
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="h-3 w-3 rounded-full bg-blue-500" />
-            <span className="text-[11px] text-slate-500 font-medium">Điểm đang xem</span>
+            <span className="text-[11px] text-slate-500 font-medium">
+              Điểm đang xem
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="h-3 w-3 rounded-full bg-red-500" />
-            <span className="text-[11px] text-slate-500 font-medium">Điểm cuối</span>
+            <span className="text-[11px] text-slate-500 font-medium">
+              Điểm cuối
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="h-0.5 w-6 bg-[#00b494] rounded" />
-            <span className="text-[11px] text-slate-500 font-medium">Lộ trình</span>
+            <span className="text-[11px] text-slate-500 font-medium">
+              Lộ trình
+            </span>
           </div>
         </div>
       </div>

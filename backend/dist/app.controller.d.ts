@@ -1,4 +1,4 @@
-import { RealtimeGateway } from './realtime/realtime.gateway';
+import { RealtimeGateway } from "./realtime/realtime.gateway";
 export declare class AppController {
     private readonly realtimeGateway;
     constructor(realtimeGateway: RealtimeGateway);

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { listDevices, DeviceListItem } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
-import { getCachedDevices } from '../services/offlineStorage';
+import { useState, useEffect, useCallback } from "react";
+import { listDevices, DeviceListItem } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
+import { getCachedDevices } from "../services/offlineStorage";
 
 export function useMyDevices() {
   const { user } = useAuth();
@@ -24,21 +24,24 @@ export function useMyDevices() {
       try {
         const cached = await getCachedDevices();
         if (cached.length > 0) {
-          setDevices(cached.map((c) => ({
-            id: c.id,
-            name: c.name,
-            status: c.status,
-            connectionStatus: c.connectionStatus as DeviceListItem['connectionStatus'],
-            lastPing: undefined,
-          })));
+          setDevices(
+            cached.map((c) => ({
+              id: c.id,
+              name: c.name,
+              status: c.status,
+              connectionStatus:
+                c.connectionStatus as DeviceListItem["connectionStatus"],
+              lastPing: undefined,
+            })),
+          );
           setFromCache(true);
           setError(null);
         } else {
-          setError('Không thể tải danh sách thiết bị');
+          setError("Không thể tải danh sách thiết bị");
           setDevices([]);
         }
       } catch {
-        setError('Không thể tải danh sách thiết bị');
+        setError("Không thể tải danh sách thiết bị");
         setDevices([]);
       }
     } finally {
@@ -53,9 +56,16 @@ export function useMyDevices() {
       setDevices([]);
       setLoading(false);
     }
-  }, [user?.email, user?.deviceIds?.join(','), fetchDevices]);
+  }, [user?.email, user?.deviceIds?.join(","), fetchDevices]);
 
   const primaryDeviceId = devices[0]?.id ?? null;
 
-  return { devices, loading, error, fromCache, primaryDeviceId, refresh: fetchDevices };
+  return {
+    devices,
+    loading,
+    error,
+    fromCache,
+    primaryDeviceId,
+    refresh: fetchDevices,
+  };
 }

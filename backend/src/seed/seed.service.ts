@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 
 /**
  * SeedService — đã xóa test accounts
@@ -9,6 +9,6 @@ export class SeedService implements OnModuleInit {
   private readonly logger = new Logger(SeedService.name);
 
   async onModuleInit() {
-    this.logger.log('SeedService: no seed data configured.');
+    this.logger.log("SeedService: no seed data configured.");
   }
 }

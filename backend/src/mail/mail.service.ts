@@ -1,8 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+import { Injectable, Logger } from "@nestjs/common";
+import * as nodemailer from "nodemailer";
 
 /**
- * MailService — từ MoniMove v3
+ * MailService — từ MoveMonitor v3
  * Gửi email HTML cảnh báo khẩn cấp qua SMTP
  */
 @Injectable()
@@ -12,10 +12,10 @@ export class MailService {
 
   constructor() {
     const port = Number(process.env.SMTP_PORT ?? 465);
-    const pass = (process.env.SMTP_PASS ?? '').replace(/\s+/g, '');
+    const pass = (process.env.SMTP_PASS ?? "").replace(/\s+/g, "");
 
     this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
       port,
       secure: port === 465,
       auth: {
@@ -26,9 +26,9 @@ export class MailService {
 
     this.transporter.verify((error) => {
       if (error) {
-        this.logger.error('❌ SMTP connection failed:', error.message);
+        this.logger.error("❌ SMTP connection failed:", error.message);
       } else {
-        this.logger.log('✅ SMTP connection verified — ready to send emails');
+        this.logger.log("✅ SMTP connection verified — ready to send emails");
       }
     });
   }
@@ -46,8 +46,8 @@ export class MailService {
       location?: { lat: number; lng: number };
     },
   ): Promise<void> {
-    const time = new Date(alertData.timestamp).toLocaleString('vi-VN', {
-      timeZone: 'Asia/Ho_Chi_Minh',
+    const time = new Date(alertData.timestamp).toLocaleString("vi-VN", {
+      timeZone: "Asia/Ho_Chi_Minh",
     });
 
     const mapsLink = alertData.location
@@ -55,15 +55,15 @@ export class MailService {
       : null;
 
     const severityColor =
-      alertData.alertType.toLowerCase().includes('ngã') ||
-      alertData.alertType.toLowerCase().includes('va chạm') ||
-      alertData.alertType.toLowerCase().includes('chấn động') ||
-      alertData.alertType.toLowerCase().includes('fall') ||
-      alertData.alertType.toLowerCase().includes('impact') ||
-      alertData.alertType.toLowerCase().includes('crash') ||
-      alertData.alertType.toLowerCase().includes('emergency')
-        ? '#dc2626'
-        : '#d97706';
+      alertData.alertType.toLowerCase().includes("ngã") ||
+      alertData.alertType.toLowerCase().includes("va chạm") ||
+      alertData.alertType.toLowerCase().includes("chấn động") ||
+      alertData.alertType.toLowerCase().includes("fall") ||
+      alertData.alertType.toLowerCase().includes("impact") ||
+      alertData.alertType.toLowerCase().includes("crash") ||
+      alertData.alertType.toLowerCase().includes("emergency")
+        ? "#dc2626"
+        : "#d97706";
 
     const html = `
 <!DOCTYPE html>
@@ -71,7 +71,7 @@ export class MailService {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cảnh báo khẩn cấp MoniMove</title>
+  <title>Cảnh báo khẩn cấp MoveMonitor</title>
 </head>
 <body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px;">
@@ -85,7 +85,7 @@ export class MailService {
               <div style="width:48px;height:48px;background:rgba(255,255,255,0.2);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;">
                 <span style="font-size:24px;">📍</span>
               </div>
-              <h1 style="margin:0;color:#fff;font-size:20px;font-weight:800;letter-spacing:-0.5px;">MoniMove</h1>
+              <h1 style="margin:0;color:#fff;font-size:20px;font-weight:800;letter-spacing:-0.5px;">MoveMonitor</h1>
               <p style="margin:4px 0 0;color:rgba(255,255,255,0.85);font-size:12px;font-weight:500;">Hệ thống Giám sát Hành trình IoT</p>
             </td>
           </tr>
@@ -118,7 +118,9 @@ export class MailService {
                     <p style="margin:0;font-size:13px;font-weight:700;color:#1e293b;">${time}</p>
                   </td>
                 </tr>
-                ${alertData.location ? `
+                ${
+                  alertData.location
+                    ? `
                 <tr>
                   <td colspan="3" style="padding-top:8px;">
                     <div style="padding:10px;background:#eff6ff;border-radius:12px;border:1px solid #bfdbfe;">
@@ -128,13 +130,17 @@ export class MailService {
                       </p>
                     </div>
                   </td>
-                </tr>` : ''}
+                </tr>`
+                    : ""
+                }
               </table>
             </td>
           </tr>
 
           <!-- CTA Button -->
-          ${mapsLink ? `
+          ${
+            mapsLink
+              ? `
           <tr>
             <td style="padding:0 32px 24px;text-align:center;">
               <a href="${mapsLink}" target="_blank"
@@ -142,13 +148,15 @@ export class MailService {
                 🗺️ Xem vị trí trên Google Maps
               </a>
             </td>
-          </tr>` : ''}
+          </tr>`
+              : ""
+          }
 
           <!-- Footer -->
           <tr>
             <td style="padding:16px 32px 24px;border-top:1px solid #f1f5f9;text-align:center;">
               <p style="margin:0;font-size:10px;color:#94a3b8;line-height:1.6;">
-                Email này được gửi tự động bởi hệ thống MoniMove IoT.<br/>
+                Email này được gửi tự động bởi hệ thống MoveMonitor IoT.<br/>
                 Vui lòng không trả lời email này.
               </p>
             </td>
@@ -163,14 +171,20 @@ export class MailService {
 
     try {
       const info = await this.transporter.sendMail({
-        from: process.env.SMTP_FROM || `"MoniMove Alert" <${process.env.SMTP_USER}>`,
+        from:
+          process.env.SMTP_FROM ||
+          `"MoveMonitor Alert" <${process.env.SMTP_USER}>`,
         to: toEmail,
-        subject: `🚨 [MoniMove] ${alertData.alertType} — Cảnh báo khẩn cấp lúc ${time}`,
+        subject: `🚨 [MoveMonitor] ${alertData.alertType} — Cảnh báo khẩn cấp lúc ${time}`,
         html,
       });
-      this.logger.log(`✅ Emergency email sent to ${toEmail} | messageId: ${info.messageId}`);
+      this.logger.log(
+        `✅ Emergency email sent to ${toEmail} | messageId: ${info.messageId}`,
+      );
     } catch (error) {
-      this.logger.error(`❌ Failed to send email to ${toEmail}: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `❌ Failed to send email to ${toEmail}: ${error instanceof Error ? error.message : String(error)}`,
+      );
       // Không throw — email lỗi không được crash flow tạo alert
     }
   }

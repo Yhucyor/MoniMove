@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
 interface StarParticlesBgProps {
   particleColor?: string;
@@ -10,10 +10,10 @@ interface StarParticlesBgProps {
 }
 
 export default function StarParticlesBg({
-  particleColor = 'rgba(0, 180, 148, 0.55)', // Teal/Green glow
-  lineColor = 'rgba(18, 161, 192, 0.16)', // Cyan/Blue lines
+  particleColor = "rgba(0, 180, 148, 0.55)", // Teal/Green glow
+  lineColor = "rgba(18, 161, 192, 0.16)", // Cyan/Blue lines
   connectionDistance = 110,
-  className = ''
+  className = "",
 }: StarParticlesBgProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -21,7 +21,7 @@ export default function StarParticlesBg({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     let animationFrameId: number;
@@ -64,7 +64,7 @@ export default function StarParticlesBg({
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      
+
       // Only draw lines if mouse is inside canvas boundary
       if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
         mouseX = x;
@@ -79,8 +79,8 @@ export default function StarParticlesBg({
       mouseActive = false;
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseleave', handleMouseLeave);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseleave", handleMouseLeave);
 
     const resizeObserver = new ResizeObserver(() => {
       if (canvas.offsetWidth && canvas.offsetHeight) {
@@ -101,7 +101,7 @@ export default function StarParticlesBg({
       cy: number,
       spikes: number,
       outerRadius: number,
-      innerRadius: number
+      innerRadius: number,
     ) => {
       let rot = (Math.PI / 2) * 3;
       let x = cx;
@@ -143,10 +143,10 @@ export default function StarParticlesBg({
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate(p.angle);
-        
+
         // Draw 4-point sparkle star
         drawStar(ctx, 0, 0, p.spikes, p.radius * 3.5, p.radius * 0.9);
-        
+
         ctx.restore();
       });
 
@@ -195,8 +195,8 @@ export default function StarParticlesBg({
     return () => {
       cancelAnimationFrame(animationFrameId);
       resizeObserver.disconnect();
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseleave', handleMouseLeave);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseleave", handleMouseLeave);
     };
   }, [particleColor, lineColor, connectionDistance]);
 

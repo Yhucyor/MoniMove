@@ -1,10 +1,9 @@
 export interface DeviceSettings {
     sos_email?: string;
     sos_phone?: string;
-    tilt_threshold?: number;
-    accel_threshold?: number;
-    speed_threshold?: number;
-    sensitivity?: number;
+    impactSensitivity?: number;
+    fallAngleThreshold?: number;
+    speedThreshold?: number;
     enable_sms?: boolean;
     enable_audio?: boolean;
 }

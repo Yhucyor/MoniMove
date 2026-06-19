@@ -11,20 +11,22 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var AlertsService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AlertsService = void 0;
+exports.isEmergency = isEmergency;
 const common_1 = require("@nestjs/common");
 const mail_service_1 = require("../mail/mail.service");
-const DB_URL = process.env.FIREBASE_RTDB_URL || 'https://monitoring-d6063-default-rtdb.firebaseio.com';
-const DB_SECRET = process.env.FIREBASE_RTDB_SECRET || '';
+const DB_URL = process.env.FIREBASE_RTDB_URL ||
+    "https://monitoring-d6063-default-rtdb.firebaseio.com";
+const DB_SECRET = process.env.FIREBASE_RTDB_SECRET || "";
 const EMERGENCY_ALERT_TYPES = [
-    'ngã đổ',
-    'ngã đổ xe',
-    'va chạm',
-    'chấn động mạnh',
-    'pin cực thấp',
-    'fall detected',
-    'strong impact',
-    'crash',
-    'emergency',
+    "ngã đổ",
+    "ngã đổ xe",
+    "va chạm",
+    "chấn động mạnh",
+    "pin cực thấp",
+    "fall detected",
+    "strong impact",
+    "crash",
+    "emergency",
 ];
 function isEmergency(alertType) {
     const lower = alertType.toLowerCase();
@@ -34,6 +36,34 @@ let AlertsService = AlertsService_1 = class AlertsService {
     constructor(mailService) {
         this.mailService = mailService;
         this.logger = new common_1.Logger(AlertsService_1.name);
+    }
+    async processEmergencyEmail(alertData) {
+        if (!isEmergency(alertData.alertType))
+            return;
+        let sosEmail = alertData.sosEmail || null;
+        if (!sosEmail) {
+            sosEmail = await this.getSosEmail(alertData.deviceId);
+        }
+        if (!sosEmail) {
+            sosEmail = process.env.SMTP_USER || null;
+            if (sosEmail) {
+                this.logger.warn(`⚠️ No SOS email for ${alertData.deviceId} — fallback to system email: ${sosEmail}`);
+            }
+        }
+        if (sosEmail) {
+            this.logger.log(`📧 Sending emergency email to: ${sosEmail} (type: ${alertData.alertType})`);
+            this.mailService
+                .sendEmergencyEmail(sosEmail, {
+                alertType: alertData.alertType,
+                message: alertData.message,
+                deviceId: alertData.deviceId,
+                timestamp: alertData.timestamp,
+                location: alertData.location,
+            })
+                .catch((err) => {
+                this.logger.error(`Email failed: ${err.message}`);
+            });
+        }
     }
     async createAlert(alertData) {
         const timestamp = alertData.timestamp || Date.now();
@@ -46,8 +76,8 @@ let AlertsService = AlertsService_1 = class AlertsService {
                 ...(alertData.location ? { location: alertData.location } : {}),
             };
             const response = await fetch(`${DB_URL}/tracking_system/alerts.json?auth=${DB_SECRET}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             });
             if (!response.ok)
@@ -55,34 +85,18 @@ let AlertsService = AlertsService_1 = class AlertsService {
             const data = await response.json();
             const alertId = data.name;
             this.logger.log(`Alert created: ${alertId} (${alertData.alertType})`);
-            if (isEmergency(alertData.alertType)) {
-                let sosEmail = alertData.sosEmail || null;
-                if (!sosEmail) {
-                    sosEmail = await this.getSosEmail(alertData.deviceId);
-                }
-                if (!sosEmail) {
-                    sosEmail = process.env.SMTP_USER || null;
-                    if (sosEmail) {
-                        this.logger.warn(`⚠️ No SOS email for ${alertData.deviceId} — fallback to system email: ${sosEmail}`);
-                    }
-                }
-                if (sosEmail) {
-                    this.logger.log(`📧 Sending emergency email to: ${sosEmail} (type: ${alertData.alertType})`);
-                    this.mailService.sendEmergencyEmail(sosEmail, {
-                        alertType: alertData.alertType,
-                        message: alertData.message,
-                        deviceId: alertData.deviceId,
-                        timestamp,
-                        location: alertData.location,
-                    }).catch((err) => {
-                        this.logger.error(`Email failed: ${err.message}`);
-                    });
-                }
-            }
+            this.processEmergencyEmail({
+                deviceId: alertData.deviceId,
+                alertType: alertData.alertType,
+                message: alertData.message,
+                timestamp,
+                location: alertData.location,
+                sosEmail: alertData.sosEmail,
+            });
             return { success: true, alertId };
         }
         catch (error) {
-            this.logger.error('Error saving alert:', error);
+            this.logger.error("Error saving alert:", error);
             throw error;
         }
     }
@@ -92,7 +106,7 @@ let AlertsService = AlertsService_1 = class AlertsService {
             if (!response.ok)
                 return null;
             const val = await response.json();
-            return typeof val === 'string' && val.includes('@') ? val : null;
+            return typeof val === "string" && val.includes("@") ? val : null;
         }
         catch {
             return null;
@@ -109,7 +123,7 @@ let AlertsService = AlertsService_1 = class AlertsService {
             const alerts = Object.keys(data)
                 .map((key) => {
                 const item = data[key];
-                if (!item || typeof item !== 'object')
+                if (!item || typeof item !== "object")
                     return null;
                 return {
                     id: key,
@@ -125,7 +139,7 @@ let AlertsService = AlertsService_1 = class AlertsService {
             return deviceId ? alerts.filter((a) => a.deviceId === deviceId) : alerts;
         }
         catch (error) {
-            this.logger.error('Error fetching alerts:', error instanceof Error ? error.message : String(error));
+            this.logger.error("Error fetching alerts:", error instanceof Error ? error.message : String(error));
             return [];
         }
     }

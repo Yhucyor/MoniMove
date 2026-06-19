@@ -24,7 +24,7 @@ let UsersService = class UsersService {
             avatar: user.avatar,
             role: user.role,
             deviceIds: user.deviceIds,
-            createdAt: '',
+            createdAt: "",
         });
     }
     getAllUsers() {

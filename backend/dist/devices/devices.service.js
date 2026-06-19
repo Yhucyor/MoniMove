@@ -10,8 +10,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DevicesService = void 0;
 const common_1 = require("@nestjs/common");
 const device_status_util_1 = require("../common/utils/device-status.util");
-const DB_URL = process.env.FIREBASE_RTDB_URL || 'https://monitoring-d6063-default-rtdb.firebaseio.com';
-const DB_SECRET = process.env.FIREBASE_RTDB_SECRET || '';
+const DB_URL = process.env.FIREBASE_RTDB_URL ||
+    "https://monitoring-d6063-default-rtdb.firebaseio.com";
+const DB_SECRET = process.env.FIREBASE_RTDB_SECRET || "";
 let DevicesService = DevicesService_1 = class DevicesService {
     constructor() {
         this.logger = new common_1.Logger(DevicesService_1.name);
@@ -32,7 +33,7 @@ let DevicesService = DevicesService_1 = class DevicesService {
                 const gps = devicesVal[id]?.current_data?.gps || {};
                 const lastPing = info.last_ping;
                 const gpsUpdatedAt = gps.updated_at;
-                const rawStatus = info.status || 'active';
+                const rawStatus = info.status || "active";
                 return {
                     id,
                     name: info.device_name || info.license_plate || id,
@@ -43,7 +44,8 @@ let DevicesService = DevicesService_1 = class DevicesService {
             });
         }
         catch (error) {
-            this.logger.error('Error listing devices: ' + (error instanceof Error ? error.message : String(error)));
+            this.logger.error("Error listing devices: " +
+                (error instanceof Error ? error.message : String(error)));
             return [];
         }
     }
@@ -73,8 +75,12 @@ let DevicesService = DevicesService_1 = class DevicesService {
                 const gps = data.current_data?.gps || {};
                 const lastPing = info.last_ping;
                 const gpsUpdatedAt = gps.updated_at;
-                const rawStatus = info.status || 'active';
-                const lastUpdate = gpsUpdatedAt ? gpsUpdatedAt * 1000 : (lastPing ? lastPing * 1000 : Date.now());
+                const rawStatus = info.status || "active";
+                const lastUpdate = gpsUpdatedAt
+                    ? gpsUpdatedAt * 1000
+                    : lastPing
+                        ? lastPing * 1000
+                        : Date.now();
                 const battery = data.current_data?.battery ?? gps?.battery ?? null;
                 return {
                     id: deviceId,
@@ -90,7 +96,8 @@ let DevicesService = DevicesService_1 = class DevicesService {
             }
         }
         catch (error) {
-            this.logger.error('Error fetching device from Realtime Database REST API: ' + (error instanceof Error ? error.message : String(error)));
+            this.logger.error("Error fetching device from Realtime Database REST API: " +
+                (error instanceof Error ? error.message : String(error)));
         }
         return null;
     }
@@ -127,7 +134,8 @@ let DevicesService = DevicesService_1 = class DevicesService {
             }
         }
         catch (error) {
-            this.logger.error('Error fetching position from Realtime Database REST API: ' + (error instanceof Error ? error.message : String(error)));
+            this.logger.error("Error fetching position from Realtime Database REST API: " +
+                (error instanceof Error ? error.message : String(error)));
         }
         return null;
     }
@@ -156,12 +164,12 @@ let DevicesService = DevicesService_1 = class DevicesService {
                 const allLogs = [];
                 for (const date of dates) {
                     const dateLogs = deviceData.history[date];
-                    if (dateLogs && typeof dateLogs === 'object') {
+                    if (dateLogs && typeof dateLogs === "object") {
                         for (const tsKey of Object.keys(dateLogs)) {
                             const point = dateLogs[tsKey];
                             const lat = point?.lat ?? point?.latitude;
                             const lng = point?.lng ?? point?.longitude;
-                            if (typeof lat === 'number' && typeof lng === 'number') {
+                            if (typeof lat === "number" && typeof lng === "number") {
                                 allLogs.push({ timestamp: Number(tsKey), lat, lng });
                             }
                         }
@@ -179,7 +187,8 @@ let DevicesService = DevicesService_1 = class DevicesService {
                             Math.cos((p1.lat * Math.PI) / 180) *
                                 Math.cos((p2.lat * Math.PI) / 180) *
                                 Math.sin(dLng / 2) ** 2;
-                        distanceM += 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                        distanceM +=
+                            6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
                     }
                     const durationSec = allLogs.length > 1
                         ? allLogs[allLogs.length - 1].timestamp - allLogs[0].timestamp
@@ -194,7 +203,8 @@ let DevicesService = DevicesService_1 = class DevicesService {
             }
         }
         catch (error) {
-            this.logger.error('Error fetching route from Realtime Database REST API: ' + (error instanceof Error ? error.message : String(error)));
+            this.logger.error("Error fetching route from Realtime Database REST API: " +
+                (error instanceof Error ? error.message : String(error)));
         }
         return { deviceId, waypoints: [], distance: 0, duration: 0 };
     }
@@ -224,7 +234,7 @@ let DevicesService = DevicesService_1 = class DevicesService {
                 const dates = Object.keys(historyData);
                 for (const date of dates) {
                     const dateLogs = historyData[date];
-                    if (dateLogs && typeof dateLogs === 'object') {
+                    if (dateLogs && typeof dateLogs === "object") {
                         for (const tsKey of Object.keys(dateLogs)) {
                             const point = dateLogs[tsKey];
                             let timestamp = Number(tsKey);
@@ -235,7 +245,12 @@ let DevicesService = DevicesService_1 = class DevicesService {
                             if (timestampMs >= startNum && timestampMs <= endNum) {
                                 const lat = point?.lat ?? point?.latitude ?? 0;
                                 const lng = point?.lng ?? point?.longitude ?? 0;
-                                logs.push({ lat, lng, timestamp: timestampMs, speed: point?.speed || 0 });
+                                logs.push({
+                                    lat,
+                                    lng,
+                                    timestamp: timestampMs,
+                                    speed: point?.speed || 0,
+                                });
                             }
                         }
                     }
@@ -245,7 +260,8 @@ let DevicesService = DevicesService_1 = class DevicesService {
             }
         }
         catch (error) {
-            this.logger.error('Error fetching history from Realtime Database REST API: ' + (error instanceof Error ? error.message : String(error)));
+            this.logger.error("Error fetching history from Realtime Database REST API: " +
+                (error instanceof Error ? error.message : String(error)));
         }
         return [];
     }

@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useRef } from 'react';
-import { AlertTriangle, X, MapPin, Clock, Bell, Shield } from 'lucide-react';
-import { subscribeAlerts } from '../../services/firebaseRealtime';
+import { useEffect, useState, useRef } from "react";
+import { AlertTriangle, X, MapPin, Clock, Bell, Shield } from "lucide-react";
+import { subscribeAlerts } from "../../services/firebaseRealtime";
 
 interface Alert {
   id: string;
   deviceId: string;
   type: string;
   message: string;
-  severity: 'critical' | 'warning' | 'info';
+  severity: "critical" | "warning" | "info";
   timestamp: number;
   location?: {
     lat: number;
@@ -23,18 +23,37 @@ interface AlertsOverlayProps {
 }
 
 // Định nghĩa getSeverity ngoài component để tránh hoisting issue
-function getSeverity(type: string): 'critical' | 'warning' | 'info' {
-  const lowerType = (type || '').toLowerCase();
-  if (lowerType.includes('ngã') || lowerType.includes('va chạm') || lowerType.includes('crash') || lowerType.includes('tilt') || lowerType.includes('cực thấp')) return 'critical';
-  if (lowerType.includes('cảnh báo') || lowerType.includes('warning') || lowerType.includes('tốc độ') || lowerType.includes('pin yếu') || lowerType.includes('nhiệt độ')) return 'warning';
-  return 'info';
+function getSeverity(type: string): "critical" | "warning" | "info" {
+  const lowerType = (type || "").toLowerCase();
+  if (
+    lowerType.includes("ngã") ||
+    lowerType.includes("va chạm") ||
+    lowerType.includes("crash") ||
+    lowerType.includes("tilt") ||
+    lowerType.includes("cực thấp")
+  )
+    return "critical";
+  if (
+    lowerType.includes("cảnh báo") ||
+    lowerType.includes("warning") ||
+    lowerType.includes("tốc độ") ||
+    lowerType.includes("pin yếu") ||
+    lowerType.includes("nhiệt độ")
+  )
+    return "warning";
+  return "info";
 }
 
-export default function AlertsOverlay({ deviceId, onAlertClick }: AlertsOverlayProps) {
+export default function AlertsOverlay({
+  deviceId,
+  onAlertClick,
+}: AlertsOverlayProps) {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [showDangerBorder, setShowDangerBorder] = useState(false);
-  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
-  const lastAlertIdRef = useRef<string>('');
+  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(
+    new Set(),
+  );
+  const lastAlertIdRef = useRef<string>("");
 
   // Popup states
   const [showDangerPopup, setShowDangerPopup] = useState(false);
@@ -46,14 +65,14 @@ export default function AlertsOverlay({ deviceId, onAlertClick }: AlertsOverlayP
     if (!deviceId) return;
 
     // Reset last alert ID when deviceId changes to correctly capture new alerts
-    lastAlertIdRef.current = '';
+    lastAlertIdRef.current = "";
 
     const unsubscribe = subscribeAlerts(deviceId, (alertsList: any[]) => {
       const formattedAlerts: Alert[] = alertsList.map((alert: any) => ({
         id: alert.id || `${alert.timestamp}`,
         deviceId: alert.deviceId || deviceId,
-        type: alert.type || alert.alertType || 'unknown',
-        message: alert.message || 'Cảnh báo không xác định',
+        type: alert.type || alert.alertType || "unknown",
+        message: alert.message || "Cảnh báo không xác định",
         severity: alert.severity || getSeverity(alert.type || alert.alertType),
         timestamp: alert.timestamp || Date.now(),
         location: alert.location || alert.gps,
@@ -72,9 +91,12 @@ export default function AlertsOverlay({ deviceId, onAlertClick }: AlertsOverlayP
         lastAlertIdRef.current = latestAlert.id;
 
         // If there's a new danger/warning alert, make sure popup is shown
-        if (latestAlert.severity === 'critical' || latestAlert.severity === 'warning') {
+        if (
+          latestAlert.severity === "critical" ||
+          latestAlert.severity === "warning"
+        ) {
           setShowDangerPopup(true);
-          if (latestAlert.severity === 'critical') {
+          if (latestAlert.severity === "critical") {
             // Play alert sound for new critical alert
             playAlertSound();
           }
@@ -88,10 +110,16 @@ export default function AlertsOverlay({ deviceId, onAlertClick }: AlertsOverlayP
   // Separate effect to handle danger/safe popup logic
   useEffect(() => {
     // Filter out dismissed alerts
-    const visibleAlerts = alerts.filter(alert => !dismissedAlerts.has(alert.id));
-    const dangerAlerts = visibleAlerts.filter(alert => alert.severity === 'critical' || alert.severity === 'warning');
+    const visibleAlerts = alerts.filter(
+      (alert) => !dismissedAlerts.has(alert.id),
+    );
+    const dangerAlerts = visibleAlerts.filter(
+      (alert) => alert.severity === "critical" || alert.severity === "warning",
+    );
     const hasDangerAlerts = dangerAlerts.length > 0;
-    const hasCriticalAlerts = dangerAlerts.some(alert => alert.severity === 'critical');
+    const hasCriticalAlerts = dangerAlerts.some(
+      (alert) => alert.severity === "critical",
+    );
 
     if (hasDangerAlerts) {
       // DANGER STATE (Danger or Warning)
@@ -132,9 +160,15 @@ export default function AlertsOverlay({ deviceId, onAlertClick }: AlertsOverlayP
 
   const playAlertSound = () => {
     // Kiểm tra settings_audio trước khi phát âm thanh
-    if (typeof window !== 'undefined' && localStorage.getItem('settings_audio') === 'false') return;
+    if (
+      typeof window !== "undefined" &&
+      localStorage.getItem("settings_audio") === "false"
+    )
+      return;
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioContext = new (
+        window.AudioContext || (window as any).webkitAudioContext
+      )();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
 
@@ -142,10 +176,13 @@ export default function AlertsOverlay({ deviceId, onAlertClick }: AlertsOverlayP
       gainNode.connect(audioContext.destination);
 
       oscillator.frequency.value = 800; // Hz
-      oscillator.type = 'sine';
+      oscillator.type = "sine";
 
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.01,
+        audioContext.currentTime + 0.5,
+      );
 
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.5);
@@ -157,19 +194,22 @@ export default function AlertsOverlay({ deviceId, onAlertClick }: AlertsOverlayP
         oscillator2.connect(gainNode2);
         gainNode2.connect(audioContext.destination);
         oscillator2.frequency.value = 1000;
-        oscillator2.type = 'sine';
+        oscillator2.type = "sine";
         gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime);
-        gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        gainNode2.gain.exponentialRampToValueAtTime(
+          0.01,
+          audioContext.currentTime + 0.5,
+        );
         oscillator2.start(audioContext.currentTime);
         oscillator2.stop(audioContext.currentTime + 0.5);
       }, 200);
     } catch (error) {
-      console.error('Error playing alert sound:', error);
+      console.error("Error playing alert sound:", error);
     }
   };
 
   const handleDismiss = (alertId: string) => {
-    setDismissedAlerts(prev => new Set(prev).add(alertId));
+    setDismissedAlerts((prev) => new Set(prev).add(alertId));
   };
 
   const handleCloseSafePopup = () => {
@@ -200,16 +240,20 @@ export default function AlertsOverlay({ deviceId, onAlertClick }: AlertsOverlayP
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (seconds < 10) return 'Vừa xong';
+    if (seconds < 10) return "Vừa xong";
     if (seconds < 60) return `${seconds} giây trước`;
     if (minutes < 60) return `${minutes} phút trước`;
     if (hours < 24) return `${hours} giờ trước`;
     return `${days} ngày trước`;
   };
 
-  const visibleAlerts = alerts.filter(alert => !dismissedAlerts.has(alert.id));
-  const dangerAlerts = visibleAlerts.filter(a => a.severity === 'critical' || a.severity === 'warning');
-  const hasCriticalAlerts = dangerAlerts.some(a => a.severity === 'critical');
+  const visibleAlerts = alerts.filter(
+    (alert) => !dismissedAlerts.has(alert.id),
+  );
+  const dangerAlerts = visibleAlerts.filter(
+    (a) => a.severity === "critical" || a.severity === "warning",
+  );
+  const hasCriticalAlerts = dangerAlerts.some((a) => a.severity === "critical");
 
   return (
     <>
@@ -262,10 +306,16 @@ export default function AlertsOverlay({ deviceId, onAlertClick }: AlertsOverlayP
       {dangerAlerts.length > 0 && (
         <div className="fixed top-4 right-16 z-[2001] animate-bounce">
           <div className="relative">
-            <div className={`absolute -inset-1 ${hasCriticalAlerts ? 'bg-red-500' : 'bg-amber-500'} rounded-full blur opacity-75 animate-pulse`}></div>
-            <div className={`relative ${hasCriticalAlerts ? 'bg-red-500' : 'bg-amber-500'} text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg`}>
+            <div
+              className={`absolute -inset-1 ${hasCriticalAlerts ? "bg-red-500" : "bg-amber-500"} rounded-full blur opacity-75 animate-pulse`}
+            ></div>
+            <div
+              className={`relative ${hasCriticalAlerts ? "bg-red-500" : "bg-amber-500"} text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg`}
+            >
               <Bell className="w-3.5 h-3.5 animate-wiggle" />
-              <span className={`absolute -top-1 -right-1 bg-white ${hasCriticalAlerts ? 'text-red-500 border-red-500' : 'text-amber-500 border-amber-500'} text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center border-2`}>
+              <span
+                className={`absolute -top-1 -right-1 bg-white ${hasCriticalAlerts ? "text-red-500 border-red-500" : "text-amber-500 border-amber-500"} text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center border-2`}
+              >
                 {dangerAlerts.length}
               </span>
             </div>
@@ -284,36 +334,50 @@ export default function AlertsOverlay({ deviceId, onAlertClick }: AlertsOverlayP
                 key={alert.id}
                 className="animate-slideInRight"
                 style={{
-                  animationDelay: `${index * 100}ms`
+                  animationDelay: `${index * 100}ms`,
                 }}
               >
-                <div className={`relative bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] ${alert.severity === 'critical'
-                  ? 'border-red-500/40 shadow-red-100/20'
-                  : 'border-amber-500/40 shadow-amber-100/20'
-                  }`}>
+                <div
+                  className={`relative bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] ${
+                    alert.severity === "critical"
+                      ? "border-red-500/40 shadow-red-100/20"
+                      : "border-amber-500/40 shadow-amber-100/20"
+                  }`}
+                >
                   {/* Left severity indicator bar */}
-                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${alert.severity === 'critical'
-                    ? 'bg-gradient-to-b from-red-500 to-rose-600 animate-pulse'
-                    : 'bg-gradient-to-b from-amber-500 to-orange-600'
-                    }`}></div>
+                  <div
+                    className={`absolute left-0 top-0 bottom-0 w-1 ${
+                      alert.severity === "critical"
+                        ? "bg-gradient-to-b from-red-500 to-rose-600 animate-pulse"
+                        : "bg-gradient-to-b from-amber-500 to-orange-600"
+                    }`}
+                  ></div>
 
                   <div className="p-3 pl-4">
                     <div className="flex items-start gap-2.5">
                       {/* Icon */}
-                      <div className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center ${alert.severity === 'critical'
-                        ? 'bg-red-100 text-red-600'
-                        : 'bg-amber-100 text-amber-600'
-                        }`}>
-                        <AlertTriangle className={`w-4 h-4 ${alert.severity === 'critical' ? 'animate-pulse' : ''}`} />
+                      <div
+                        className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center ${
+                          alert.severity === "critical"
+                            ? "bg-red-100 text-red-600"
+                            : "bg-amber-100 text-amber-600"
+                        }`}
+                      >
+                        <AlertTriangle
+                          className={`w-4 h-4 ${alert.severity === "critical" ? "animate-pulse" : ""}`}
+                        />
                       </div>
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1 mb-0.5">
-                          <span className={`text-[8px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded ${alert.severity === 'critical'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-amber-100 text-amber-700'
-                            }`}>
+                          <span
+                            className={`text-[8px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                              alert.severity === "critical"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-amber-100 text-amber-700"
+                            }`}
+                          >
                             {alert.type}
                           </span>
                           {isNew && (
@@ -374,8 +438,13 @@ export default function AlertsOverlay({ deviceId, onAlertClick }: AlertsOverlayP
           }
         }
         @keyframes wiggle {
-          0%, 100% { transform: rotate(-3deg); }
-          50% { transform: rotate(3deg); }
+          0%,
+          100% {
+            transform: rotate(-3deg);
+          }
+          50% {
+            transform: rotate(3deg);
+          }
         }
         .animate-wiggle {
           animation: wiggle 0.5s ease-in-out infinite;

@@ -10,11 +10,13 @@ exports.RealtimeModule = void 0;
 const common_1 = require("@nestjs/common");
 const realtime_gateway_1 = require("./realtime.gateway");
 const rtdb_listener_service_1 = require("./rtdb-listener.service");
+const mail_module_1 = require("../mail/mail.module");
 let RealtimeModule = class RealtimeModule {
 };
 exports.RealtimeModule = RealtimeModule;
 exports.RealtimeModule = RealtimeModule = __decorate([
     (0, common_1.Module)({
+        imports: [mail_module_1.MailModule],
         providers: [realtime_gateway_1.RealtimeGateway, rtdb_listener_service_1.RtdbListenerService],
         exports: [realtime_gateway_1.RealtimeGateway],
     })

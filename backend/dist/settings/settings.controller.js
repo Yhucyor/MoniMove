@@ -30,28 +30,34 @@ let SettingsController = class SettingsController {
 };
 exports.SettingsController = SettingsController;
 __decorate([
-    (0, common_1.Get)(':deviceId'),
-    (0, swagger_1.ApiOperation)({ summary: 'Lấy cài đặt thiết bị', description: 'Đọc cài đặt ngưỡng, SOS email, v.v. từ Firebase RTDB' }),
-    (0, swagger_1.ApiParam)({ name: 'deviceId', example: 'DEVICE_ESP32_01' }),
-    __param(0, (0, common_1.Param)('deviceId')),
+    (0, common_1.Get)(":deviceId"),
+    (0, swagger_1.ApiOperation)({
+        summary: "Lấy cài đặt thiết bị",
+        description: "Đọc cài đặt ngưỡng, SOS email, v.v. từ Firebase RTDB",
+    }),
+    (0, swagger_1.ApiParam)({ name: "deviceId", example: "DEVICE_ESP32_01" }),
+    __param(0, (0, common_1.Param)("deviceId")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], SettingsController.prototype, "getSettings", null);
 __decorate([
-    (0, common_1.Put)(':deviceId'),
-    (0, swagger_1.ApiOperation)({ summary: 'Lưu cài đặt thiết bị', description: 'Ghi/merge cài đặt vào Firebase RTDB' }),
-    (0, swagger_1.ApiParam)({ name: 'deviceId', example: 'DEVICE_ESP32_01' }),
-    __param(0, (0, common_1.Param)('deviceId')),
+    (0, common_1.Put)(":deviceId"),
+    (0, swagger_1.ApiOperation)({
+        summary: "Lưu cài đặt thiết bị",
+        description: "Ghi/merge cài đặt vào Firebase RTDB",
+    }),
+    (0, swagger_1.ApiParam)({ name: "deviceId", example: "DEVICE_ESP32_01" }),
+    __param(0, (0, common_1.Param)("deviceId")),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], SettingsController.prototype, "saveSettings", null);
 exports.SettingsController = SettingsController = __decorate([
-    (0, swagger_1.ApiTags)('settings'),
-    (0, swagger_1.ApiBearerAuth)('firebase-token'),
-    (0, common_1.Controller)('settings'),
+    (0, swagger_1.ApiTags)("settings"),
+    (0, swagger_1.ApiBearerAuth)("firebase-token"),
+    (0, common_1.Controller)("settings"),
     (0, common_1.UseGuards)(firebase_auth_guard_1.FirebaseAuthGuard),
     __metadata("design:paramtypes", [settings_service_1.SettingsService])
 ], SettingsController);

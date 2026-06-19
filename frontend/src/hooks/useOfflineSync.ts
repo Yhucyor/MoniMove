@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from "react";
 import {
   cacheDevices,
   cacheAlerts,
@@ -10,10 +10,15 @@ import {
   removePendingAlert,
   isBrowserOnline,
   CachedDevice,
-} from '../services/offlineStorage';
-import { listDevices, getAlertsHistory, sendAlert, DeviceListItem } from '../services/api';
-import { getConnectionStatus } from '../utils/deviceStatus';
-import { useNotifications } from '../contexts/NotificationContext';
+} from "../services/offlineStorage";
+import {
+  listDevices,
+  getAlertsHistory,
+  sendAlert,
+  DeviceListItem,
+} from "../services/api";
+import { getConnectionStatus } from "../utils/deviceStatus";
+import { useNotifications } from "../contexts/NotificationContext";
 
 export function useOfflineSync() {
   const [isOnline, setIsOnline] = useState(true);
@@ -81,9 +86,9 @@ export function useOfflineSync() {
     const handleOnline = () => {
       setIsOnline(true);
       notify({
-        type: 'success',
-        title: 'Đã kết nối lại',
-        message: 'Mạng đã khôi phục. Đang đồng bộ dữ liệu...',
+        type: "success",
+        title: "Đã kết nối lại",
+        message: "Mạng đã khôi phục. Đang đồng bộ dữ liệu...",
       });
       syncData();
     };
@@ -91,14 +96,14 @@ export function useOfflineSync() {
     const handleOffline = () => {
       setIsOnline(false);
       notify({
-        type: 'warning',
-        title: 'Mất kết nối mạng',
-        message: 'Dữ liệu sẽ được lưu tạm và đồng bộ khi có mạng trở lại.',
+        type: "warning",
+        title: "Mất kết nối mạng",
+        message: "Dữ liệu sẽ được lưu tạm và đồng bộ khi có mạng trở lại.",
       });
     };
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     syncData();
     const interval = setInterval(syncData, 60_000);
@@ -106,13 +111,20 @@ export function useOfflineSync() {
     getCachedDevices().then((d) => setCachedDeviceCount(d.length));
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
       clearInterval(interval);
     };
   }, [syncData, notify]);
 
-  return { isOnline, isSyncing, lastSyncAt, cachedDeviceCount, syncData, getCachedAlerts };
+  return {
+    isOnline,
+    isSyncing,
+    lastSyncAt,
+    cachedDeviceCount,
+    syncData,
+    getCachedAlerts,
+  };
 }
 
 export async function getDevicesWithOfflineFallback(): Promise<CachedDevice[]> {
