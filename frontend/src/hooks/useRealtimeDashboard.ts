@@ -150,7 +150,7 @@ export function useRealtimeDashboard(deviceId: string | null) {
             lng: gps.longitude ?? gps.lng ?? 0,
             speed: gps.speed ?? 0,
             battery: info.battery ?? info.current_data?.battery ?? 0,
-            status: info.status === "online" ? "online" : "offline",
+            status: info.connectionStatus === "online" ? "online" : "offline",
             isTilted: mpu?.is_tilted ?? false,
             timestamp: gps.updated_at ? gps.updated_at * 1000 : Date.now(),
             accel: mpu?.accel,
@@ -197,7 +197,7 @@ export function useRealtimeDashboard(deviceId: string | null) {
             lng: pos.lng,
             speed: pos.speed ?? 0,
             battery: 0,
-            status: "online",
+            status: "unknown",
             isTilted: false,
             timestamp: Date.now(),
           };
