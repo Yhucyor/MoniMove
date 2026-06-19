@@ -10,11 +10,17 @@ const getApiBaseUrl = () => {
   // Fallback: use the same host with default backend port (3001)
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
+    
+    // Nếu chạy trên domain production thực tế trên Render, tự động chuyển hướng về backend production
+    if (hostname.includes('monimove.onrender.com')) {
+      return 'https://monimove-2.onrender.com/api';
+    }
+    
     return `http://${hostname}:3001/api`;
   }
 
   // Server‑side fallback
-  return process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001/api';
+  return process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://monimove-2.onrender.com/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
