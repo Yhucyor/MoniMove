@@ -1,2 +1,86 @@
+# Dependencies
 node_modules/
+frontend/node_modules/
+backend/node_modules/
+MoniMove_Final/frontend/node_modules/
+MoniMove_Final/backend/node_modules/
+
+# Build outputs
+frontend/.next/
+frontend/out/
+frontend/build/
+backend/dist/
+MoniMove_Final/frontend/.next/
+MoniMove_Final/frontend/out/
+MoniMove_Final/backend/dist/
+
+# Environment variables
 .env
+.env.local
+.env.*.local
+frontend/.env.local
+backend/.env
+MoniMove_Final/frontend/.env.local
+MoniMove_Final/backend/.env
+
+# Firebase sensitive files
+**/firebase-service-account.json
+backend/src/config/firebase-service-account.json
+MoniMove_Final/backend/src/config/firebase-service-account.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+frontend/*.log
+backend/*.log
+compile_errors.log
+npm_debug.log
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# TypeScript
+*.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
+backend/tsconfig.tsbuildinfo
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Yarn
+.yarn/
+.yarn-integrity
+yarn.lock
+pnpm-lock.yaml
+
+# Package manager
+package-lock.json
+
+# Documentation (if auto-generated)
+CHECKLIST.md
+FIX_SUMMARY.md
+SETUP_GUIDE.md
+QUICKSTART.md
+CHANGES.md
+FIREBASE_FIX.md

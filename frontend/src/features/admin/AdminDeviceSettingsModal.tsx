@@ -43,13 +43,14 @@ export default function AdminDeviceSettingsModal({
   const [settings, setSettings] = useState<DeviceSettings>({
     sos_email: "",
     sos_phone: "",
-    tilt_threshold: 45,
-    accel_threshold: 2.5,
-    speed_threshold: 80,
-    sensitivity: 3,
+    fallAngleThreshold: 45,
+    impactSensitivity: 2.5,
+    speedThreshold: 80,
     enable_sms: false,
     enable_audio: true,
   });
+  // UI-only state for sensitivity level (1-5)
+  const [sensitivity, setSensitivity] = useState<number>(3);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasUnsaved, setHasUnsaved] = useState(false);
@@ -103,13 +104,13 @@ export default function AdminDeviceSettingsModal({
     setSettings({
       sos_email: "",
       sos_phone: "",
-      tilt_threshold: 45,
-      accel_threshold: 2.5,
-      speed_threshold: 80,
-      sensitivity: 3,
+      fallAngleThreshold: 45,
+      impactSensitivity: 2.5,
+      speedThreshold: 80,
       enable_sms: false,
       enable_audio: true,
     });
+    setSensitivity(3);
     setHasUnsaved(true);
   };
 
@@ -240,8 +241,8 @@ export default function AdminDeviceSettingsModal({
                       Độ nhạy va chạm
                     </label>
                     <span className="rounded-lg bg-[#00b494]/10 px-2.5 py-1 text-xs font-bold text-[#00b494]">
-                      Cấp {settings.sensitivity} —{" "}
-                      {SENSITIVITY_MAP[settings.sensitivity ?? 3]}G
+                      Cấp {sensitivity} —{" "}
+                      {SENSITIVITY_MAP[sensitivity]}G
                     </span>
                   </div>
                   <input
@@ -249,11 +250,11 @@ export default function AdminDeviceSettingsModal({
                     min="1"
                     max="5"
                     step="1"
-                    value={settings.sensitivity ?? 3}
+                    value={sensitivity}
                     onChange={(e) => {
                       const val = Number(e.target.value);
-                      update("sensitivity", val);
-                      update("accel_threshold", SENSITIVITY_MAP[val]);
+                      setSensitivity(val);
+                      update("impactSensitivity", SENSITIVITY_MAP[val]);
                     }}
                     className="w-full h-2 bg-slate-200 rounded-lg appearance-none accent-[#00b494] cursor-pointer"
                   />
@@ -272,7 +273,7 @@ export default function AdminDeviceSettingsModal({
                       Góc nghiêng báo động ngã
                     </label>
                     <span className="rounded-lg bg-purple-50 border border-purple-100 px-2.5 py-1 text-xs font-bold text-purple-700">
-                      {settings.tilt_threshold ?? 45}°
+                      {settings.fallAngleThreshold}°
                     </span>
                   </div>
                   <input
@@ -280,9 +281,9 @@ export default function AdminDeviceSettingsModal({
                     min="20"
                     max="90"
                     step="5"
-                    value={settings.tilt_threshold ?? 45}
+                    value={settings.fallAngleThreshold}
                     onChange={(e) =>
-                      update("tilt_threshold", Number(e.target.value))
+                      update("fallAngleThreshold", Number(e.target.value))
                     }
                     className="w-full h-2 bg-slate-200 rounded-lg appearance-none accent-purple-600 cursor-pointer"
                   />
@@ -301,7 +302,7 @@ export default function AdminDeviceSettingsModal({
                       Tốc độ cảnh báo
                     </label>
                     <span className="rounded-lg bg-amber-50 border border-amber-100 px-2.5 py-1 text-xs font-bold text-amber-600">
-                      {settings.speed_threshold ?? 80} km/h
+                      {settings.speedThreshold} km/h
                     </span>
                   </div>
                   <input
@@ -309,9 +310,9 @@ export default function AdminDeviceSettingsModal({
                     min="30"
                     max="200"
                     step="10"
-                    value={settings.speed_threshold ?? 80}
+                    value={settings.speedThreshold}
                     onChange={(e) =>
-                      update("speed_threshold", Number(e.target.value))
+                      update("speedThreshold", Number(e.target.value))
                     }
                     className="w-full h-2 bg-slate-200 rounded-lg appearance-none accent-amber-500 cursor-pointer"
                   />
@@ -393,17 +394,17 @@ export default function AdminDeviceSettingsModal({
                   {[
                     {
                       label: "Va chạm",
-                      value: `>${settings.accel_threshold ?? 2.5}G`,
+                      value: `>${settings.impactSensitivity ?? 2.5}G`,
                       color: "text-[#00b494] bg-[#00b494]/10",
                     },
                     {
                       label: "Góc ngã",
-                      value: `>${settings.tilt_threshold ?? 45}°`,
+                      value: `>${settings.fallAngleThreshold ?? 45}°`,
                       color: "text-purple-600 bg-purple-50",
                     },
                     {
                       label: "Tốc độ",
-                      value: `>${settings.speed_threshold ?? 80}km/h`,
+                      value: `>${settings.speedThreshold ?? 80}km/h`,
                       color: "text-amber-600 bg-amber-50",
                     },
                   ].map((s) => (
