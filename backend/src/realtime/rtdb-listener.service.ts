@@ -159,6 +159,7 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
         await this.handleTripDetection(deviceId, lat, lng, gps.speed ?? 0);
 
         // ── Tilt Detection ───────────────────────────────────────────────
+        const mpu = current.mpu6050 || {};
         const isTilted = mpu.is_tilted === true;
         await this.handleTiltDetection(deviceId, isTilted, lat, lng);
       }
