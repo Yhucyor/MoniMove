@@ -86,9 +86,9 @@ export default function DeviceCard({
 }: DeviceCardProps) {
   const gps = device.current_data?.gps;
   const mpu = device.current_data?.mpu6050;
-  const buzzerActive = device.current_data?.buzzer ?? false;
 
   const isTilted = mpu?.is_tilted ?? false;
+  const buzzerActive = device.current_data?.buzzer || (device as any).controls?.buzzer || isTilted || false;
 
   // Ưu tiên GPS updated_at (realtime nhất), sau đó lastUpdate, rồi connectionStatus từ API
   const gpsUpdatedAt = gps?.updated_at ? gps.updated_at * 1000 : undefined;
