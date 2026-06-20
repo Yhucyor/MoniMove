@@ -36,6 +36,14 @@ interface GpsPoint {
   speed?: number;
 }
 
+interface TripData {
+  id: string;
+  points: GpsPoint[];
+  startTime: number;
+  endTime: number;
+  distance: number;
+}
+
 function haversineM(p1: GpsPoint, p2: GpsPoint): number {
   const R = 6371000;
   const dLat = ((p2.lat - p1.lat) * Math.PI) / 180;
@@ -87,19 +95,17 @@ export default function AlertsHistoryTab({
   const [startTime, setStartTime] = useState("00:00");
   const [endTime, setEndTime] = useState("23:59");
 
-  const [historyPoints, setHistoryPoints] = useState<GpsPoint[]>([]);
+  const [trips, setTrips] = useState<TripData[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [totalDistance, setTotalDistance] = useState(0);
   const [isRefreshingHistory, setIsRefreshingHistory] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const [selectedPointIndex, setSelectedPointIndex] = useState<number | null>(
-    null,
-  );
+  const [selectedTrip, setSelectedTrip] = useState<TripData | null>(null);
 
   const fetchTodayHistory = async (showRefreshIndicator = false) => {
     if (!deviceId) {
-      setHistoryPoints([]);
+      setTrips([]);
       setTotalDistance(0);
       return;
     }
@@ -113,7 +119,7 @@ export default function AlertsHistoryTab({
       const data = snapshot.val();
 
       if (!data) {
-        setHistoryPoints([]);
+        setTrips([]);
         setTotalDistance(0);
         return;
       }
@@ -132,7 +138,8 @@ export default function AlertsHistoryTab({
       const rangeStartMs = rangeStart.getTime();
       const rangeEndMs = rangeEnd.getTime();
 
-      const allLogs: GpsPoint[] = [];
+      const parsedTrips: TripData[] = [];
+      let totalDist = 0;
 
       for (const date of Object.keys(data)) {
         const dateLogs = data[date];
@@ -145,9 +152,10 @@ export default function AlertsHistoryTab({
 
         if (isNewStructure) {
           // Cấu trúc mới: history/{date}/{tripId}/{timestamp}
-          for (const tripData of Object.values(dateLogs) as Record<string, any>[]) {
+          for (const [tripId, tripData] of Object.entries(dateLogs)) {
             if (!tripData || typeof tripData !== "object") continue;
-            for (const [tsKey, point] of Object.entries(tripData)) {
+            const pts: GpsPoint[] = [];
+            for (const [tsKey, point] of Object.entries(tripData as Record<string, any>)) {
               if (!point) continue;
               let tsMs = Number(tsKey);
               if (isNaN(tsMs) || tsMs === 0) continue;
@@ -157,11 +165,25 @@ export default function AlertsHistoryTab({
               const lng = (point as any).lng ?? (point as any).longitude;
               if (typeof lat !== "number" || typeof lng !== "number") continue;
               if (lat === 0 && lng === 0) continue;
-              allLogs.push({ timestamp: tsMs, lat, lng, speed: (point as any).speed ?? undefined });
+              pts.push({ timestamp: tsMs, lat, lng, speed: (point as any).speed ?? undefined });
+            }
+            if (pts.length > 0) {
+              pts.sort((a, b) => a.timestamp - b.timestamp);
+              let dist = 0;
+              for (let i = 1; i < pts.length; i++) dist += haversineM(pts[i - 1], pts[i]);
+              parsedTrips.push({
+                id: tripId,
+                points: pts,
+                startTime: pts[0].timestamp,
+                endTime: pts[pts.length - 1].timestamp,
+                distance: Math.round(dist)
+              });
+              totalDist += Math.round(dist);
             }
           }
         } else {
           // Cấu trúc cũ: history/{date}/{timestamp}
+          const pts: GpsPoint[] = [];
           for (const tsKey of Object.keys(dateLogs)) {
             const point = dateLogs[tsKey];
             if (!point) continue;
@@ -173,19 +195,28 @@ export default function AlertsHistoryTab({
             const lng = point.lng ?? point.longitude;
             if (typeof lat !== "number" || typeof lng !== "number") continue;
             if (lat === 0 && lng === 0) continue;
-            allLogs.push({ timestamp: tsMs, lat, lng, speed: point.speed ?? undefined });
+            pts.push({ timestamp: tsMs, lat, lng, speed: point.speed ?? undefined });
+          }
+          if (pts.length > 0) {
+            pts.sort((a, b) => a.timestamp - b.timestamp);
+            let dist = 0;
+            for (let i = 1; i < pts.length; i++) dist += haversineM(pts[i - 1], pts[i]);
+            parsedTrips.push({
+              id: `old-trip-${date}`,
+              points: pts,
+              startTime: pts[0].timestamp,
+              endTime: pts[pts.length - 1].timestamp,
+              distance: Math.round(dist)
+            });
+            totalDist += Math.round(dist);
           }
         }
       }
 
-      allLogs.sort((a, b) => a.timestamp - b.timestamp);
+      parsedTrips.sort((a, b) => b.startTime - a.startTime); // Mới nhất lên trên
 
-      let dist = 0;
-      for (let i = 1; i < allLogs.length; i++)
-        dist += haversineM(allLogs[i - 1], allLogs[i]);
-
-      setHistoryPoints(allLogs);
-      setTotalDistance(Math.round(dist));
+      setTrips(parsedTrips);
+      setTotalDistance(totalDist);
     } catch (err) {
       console.error("Error fetching GPS history:", err);
       setHistoryError("Không thể tải lịch sử di chuyển.");
@@ -225,14 +256,11 @@ export default function AlertsHistoryTab({
   ).length;
   const warningCount = logs.length - criticalCount;
 
-  const durationSec =
-    historyPoints.length > 1
-      ? Math.round(
-          (historyPoints[historyPoints.length - 1].timestamp -
-            historyPoints[0].timestamp) /
-            1000,
-        )
-      : 0;
+  const durationSec = trips.reduce(
+    (acc, trip) => acc + Math.round((trip.endTime - trip.startTime) / 1000),
+    0
+  );
+  const totalGpsPoints = trips.reduce((acc, trip) => acc + trip.points.length, 0);
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
@@ -299,9 +327,9 @@ export default function AlertsHistoryTab({
         >
           <Route className="h-3.5 w-3.5" />
           Lịch sử di chuyển
-          {historyPoints.length > 0 && (
+          {trips.length > 0 && (
             <span className="bg-[#00b494]/10 text-[#00b494] text-[9px] font-black px-1.5 py-0.5 rounded-full">
-              {historyPoints.length}
+              {trips.length}
             </span>
           )}
         </button>
@@ -513,7 +541,7 @@ export default function AlertsHistoryTab({
           </div>
 
           {/* Summary stats */}
-          {!historyLoading && historyPoints.length > 0 && (
+          {!historyLoading && trips.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="rounded-2xl border border-[#00b494]/20 bg-[#00b494]/5 p-4 shadow-sm flex items-center gap-3">
                 <div className="h-9 w-9 rounded-xl bg-[#00b494]/10 flex items-center justify-center shrink-0">
@@ -521,10 +549,10 @@ export default function AlertsHistoryTab({
                 </div>
                 <div>
                   <p className="text-[9px] font-bold uppercase tracking-wider text-[#00b494]/70">
-                    Điểm GPS
+                    Chuyến đi
                   </p>
                   <p className="text-xl font-black text-[#00b494]">
-                    {historyPoints.length}
+                    {trips.length}
                   </p>
                 </div>
               </div>
@@ -562,15 +590,10 @@ export default function AlertsHistoryTab({
                 </div>
                 <div>
                   <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                    Bắt đầu
+                    Điểm GPS
                   </p>
                   <p className="text-sm font-black text-slate-700">
-                    {historyPoints.length > 0
-                      ? new Date(historyPoints[0].timestamp).toLocaleTimeString(
-                          "vi-VN",
-                          { hour: "2-digit", minute: "2-digit" },
-                        )
-                      : "—"}
+                    {totalGpsPoints}
                   </p>
                 </div>
               </div>
@@ -605,75 +628,75 @@ export default function AlertsHistoryTab({
                 Thử lại
               </button>
             </div>
-          ) : historyPoints.length === 0 ? (
+          ) : trips.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 border border-dashed border-slate-200 rounded-[24px] bg-white/50 text-center">
               <div className="h-16 w-16 rounded-full bg-[#00b494]/10 flex items-center justify-center mb-4">
                 <Route className="h-8 w-8 text-[#00b494]" />
               </div>
               <h3 className="text-base font-bold text-slate-800 mb-1">
-                Chưa có lịch sử di chuyển hôm nay
+                Chưa có chuyến đi nào hôm nay
               </h3>
               <p className="text-sm text-slate-400 max-w-[300px] leading-relaxed">
-                Thiết bị chưa ghi nhận điểm GPS nào trong ngày hôm nay.
+                Thiết bị chưa ghi nhận lộ trình di chuyển nào trong ngày hôm nay.
               </p>
             </div>
           ) : (
             <div className="relative">
               <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#00b494]/40 via-[#00b494]/20 to-transparent" />
-              <div className="space-y-2 pl-14 max-h-[520px] overflow-y-auto pr-1">
-                {historyPoints.map((pt, idx) => {
-                  const isFirst = idx === 0;
-                  const isLast = idx === historyPoints.length - 1;
+              <div className="space-y-4 pl-14 max-h-[520px] overflow-y-auto pr-1">
+                {trips.map((trip, idx) => {
+                  const tripDurationSec = Math.round(
+                    (trip.endTime - trip.startTime) / 1000,
+                  );
                   return (
                     <div
-                      key={`${pt.timestamp}-${idx}`}
-                      onClick={() => setSelectedPointIndex(idx)}
-                      className="group relative rounded-2xl border border-slate-100 bg-white px-5 py-3.5 shadow-sm hover:shadow-md hover:border-[#00b494]/30 transition-all duration-200 cursor-pointer active:scale-[0.99]"
+                      key={trip.id}
+                      className="group relative rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:shadow-md hover:border-[#00b494]/30 transition-all duration-200"
                     >
-                      <div
-                        className={`absolute -left-[38px] top-4 h-3.5 w-3.5 rounded-full border-2 border-white shadow-sm ${isFirst || isLast ? "bg-[#00b494] scale-125" : "bg-slate-300 group-hover:bg-[#00b494]/60"} transition-all`}
-                      />
-
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div
-                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${isFirst ? "bg-[#00b494] text-white" : isLast ? "bg-blue-500 text-white" : "bg-slate-100 text-slate-400 group-hover:bg-[#00b494]/10 group-hover:text-[#00b494]"} transition-colors`}
-                          >
-                            <MapPin className="h-3.5 w-3.5" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-[11px] font-bold text-slate-700 truncate">
-                              {isFirst
-                                ? "🟢 Xuất phát"
-                                : isLast
-                                  ? "🔵 Điểm cuối"
-                                  : `Điểm ${idx + 1}`}
-                            </p>
-                            <p className="text-[10px] text-slate-400 font-mono">
-                              {pt.lat.toFixed(5)}°N, {pt.lng.toFixed(5)}°E
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          {pt.speed !== undefined && (
-                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-lg">
-                              {pt.speed.toFixed(1)} km/h
+                      <div className="absolute -left-[38px] top-5 h-3.5 w-3.5 rounded-full border-2 border-white shadow-sm bg-[#00b494] group-hover:scale-125 transition-all" />
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <h4 className="text-sm font-bold text-slate-800">
+                              Chuyến đi {trips.length - idx}
+                            </h4>
+                            <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
+                              {trip.points.length} điểm GPS
                             </span>
-                          )}
-                          <span className="text-[10px] text-slate-400 font-medium">
-                            {new Date(pt.timestamp).toLocaleTimeString(
-                              "vi-VN",
-                              {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                second: "2-digit",
-                              },
-                            )}
-                          </span>
-                          <span className="text-[10px] text-[#00b494] font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
-                            <Navigation className="h-3 w-3" /> Xem
-                          </span>
+                          </div>
+                          <div className="flex items-center flex-wrap gap-3 text-xs text-slate-500 font-medium">
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {new Date(trip.startTime).toLocaleTimeString(
+                                "vi-VN",
+                                { hour: "2-digit", minute: "2-digit" },
+                              )}
+                              {" - "}
+                              {new Date(trip.endTime).toLocaleTimeString(
+                                "vi-VN",
+                                { hour: "2-digit", minute: "2-digit" },
+                              )}
+                            </span>
+                            <span className="text-slate-300">•</span>
+                            <span className="flex items-center gap-1 text-blue-600">
+                              <Navigation className="h-3 w-3" />
+                              {trip.distance >= 1000
+                                ? `${(trip.distance / 1000).toFixed(1)} km`
+                                : `${trip.distance} m`}
+                            </span>
+                            <span className="text-slate-300">•</span>
+                            <span className="flex items-center gap-1 text-purple-600">
+                              <Timer className="h-3 w-3" />
+                              {formatDuration(tripDurationSec)}
+                            </span>
+                          </div>
                         </div>
+                        <button
+                          onClick={() => setSelectedTrip(trip)}
+                          className="flex items-center justify-center gap-1.5 px-4 py-2 bg-[#00b494]/10 text-[#00b494] hover:bg-[#00b494] hover:text-white rounded-xl text-xs font-bold transition-colors shrink-0"
+                        >
+                          <MapPin className="h-3.5 w-3.5" /> Xem lộ trình
+                        </button>
                       </div>
                     </div>
                   );
@@ -684,12 +707,12 @@ export default function AlertsHistoryTab({
         </>
       )}
 
-      {/* Map modal khi click vào điểm GPS */}
-      {selectedPointIndex !== null && historyPoints.length > 0 && (
+      {/* Map modal khi click vào chuyến đi */}
+      {selectedTrip !== null && (
         <HistoryMapModal
-          points={historyPoints}
-          focusIndex={selectedPointIndex}
-          onClose={() => setSelectedPointIndex(null)}
+          points={selectedTrip.points}
+          focusIndex={0}
+          onClose={() => setSelectedTrip(null)}
         />
       )}
     </div>
