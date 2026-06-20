@@ -390,6 +390,11 @@ export interface DeviceSettings {
   speedThreshold?: number; // 0–200 (km/h)
   enable_sms?: boolean;
   enable_audio?: boolean;
+  // snake_case aliases used by SettingsTab
+  tilt_threshold?: number;
+  accel_threshold?: number;
+  speed_threshold?: number;
+  sensitivity?: number;
 }
 
 export async function getDeviceSettings(
