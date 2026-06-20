@@ -93,8 +93,11 @@ export default function DeviceCard({
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isTilted) {
+      // Còi bật ngay lập tức khi ngã
+      setTiltBuzzerActive(true);
+      // Tự động tắt sau 15 giây (mô phỏng phần cứng hú 15s rồi tắt)
       timer = setTimeout(() => {
-        setTiltBuzzerActive(true);
+        setTiltBuzzerActive(false);
       }, 15000);
     } else {
       setTiltBuzzerActive(false);
