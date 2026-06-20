@@ -123,10 +123,10 @@ export function classifyMotion(snapshot: SensorSnapshot): MotionClassification {
   }
 
   // ── MOVING (normal) ─────────────────────────────────────────────────────
-  if (speed > 5 || f.dynamicAccel > 0.15 || f.totalGyro > 0.5) {
+  if (speed > 5 || f.dynamicAccel > 0.3 || f.totalGyro > 1.0) {
     const conf = Math.min(0.6 + speed / 60 + f.dynamicAccel, 0.9);
     reasons.push(`Tốc độ ${speed.toFixed(0)} km/h`);
-    if (f.dynamicAccel > 0.15)
+    if (f.dynamicAccel > 0.3)
       reasons.push(`Gia tốc động ${f.dynamicAccel.toFixed(2)}G`);
     return {
       state: "moving",
@@ -138,7 +138,7 @@ export function classifyMotion(snapshot: SensorSnapshot): MotionClassification {
   }
 
   // ── WALKING ─────────────────────────────────────────────────────────────
-  if (speed > 0.5 || f.dynamicAccel > 0.05 || f.totalGyro > 0.1) {
+  if (speed > 1 || f.dynamicAccel > 0.15 || f.totalGyro > 0.5) {
     reasons.push("Rung nhẹ / bước chân");
     return {
       state: "walking",

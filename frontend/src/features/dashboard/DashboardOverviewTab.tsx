@@ -53,7 +53,11 @@ export default function DashboardOverviewTab({
     lastPing,
   } = useRealtimeDashboard(selectedId);
 
+  // Tính số lượng thiết bị online, kết hợp realtime của thiết bị đang chọn
   const onlineCount = devices.filter((d) => {
+    if (selectedId === d.id && liveData?.status && liveData.status !== "unknown") {
+      return liveData.status === "online";
+    }
     const conn = getConnectionStatus(
       undefined,
       undefined,
@@ -61,6 +65,19 @@ export default function DashboardOverviewTab({
     );
     return conn === "online";
   }).length;
+
+  // Lấy trạng thái kết nối thật của thiết bị đang chọn
+  const fallbackStatus = getConnectionStatus(
+    undefined,
+    undefined,
+    devices.find((d) => d.id === selectedId)?.connectionStatus ||
+      devices.find((d) => d.id === selectedId)?.status,
+  );
+
+  const currentDeviceOnline =
+    (liveData?.status && liveData.status !== "unknown"
+      ? liveData.status
+      : fallbackStatus) === "online";
 
   if (!loading && devices.length === 0) {
     return (
@@ -91,17 +108,17 @@ export default function DashboardOverviewTab({
           {/* Realtime status bar removed */}
           <span
             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold border ${
-              isOnline
+              currentDeviceOnline
                 ? "bg-emerald-50 text-emerald-600 border-emerald-200/50"
                 : "bg-amber-50 text-amber-600 border-amber-200/50"
             }`}
           >
-            {isOnline ? (
+            {currentDeviceOnline ? (
               <Wifi className="h-3 w-3" />
             ) : (
               <WifiOff className="h-3 w-3" />
             )}
-            {isOnline ? "Online" : "Offline"}
+            {currentDeviceOnline ? "Device Online" : "Device Offline"}
           </span>
           <button
             onClick={() => {
