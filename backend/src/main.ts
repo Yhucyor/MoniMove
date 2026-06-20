@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import "dotenv/config";
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
@@ -18,10 +19,33 @@ async function bootstrap() {
     "http://localhost:3001",
   ];
   if (frontendUrl) origins.push(frontendUrl.replace(/\/$/, ""));
+=======
+import 'dotenv/config';
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+  // Firebase Admin được khởi tạo trong FirebaseService.onModuleInit()
+  // Không cần khởi tạo ở đây nữa để tránh duplicate initialization
+  
+  const app = await NestFactory.create(AppModule);
+  
+  // Set global prefix to api
+  app.setGlobalPrefix('api');
+  
+  // Bật CORS để Frontend Next.js có thể gọi API sang đây
+  const frontendUrl = process.env.FRONTEND_URL;
+  const origins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+  if (frontendUrl) {
+    origins.push(frontendUrl);
+    origins.push(frontendUrl.replace(/\/$/, ''));
+  }
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
 
   app.enableCors({
     origin: origins,
     credentials: true,
+<<<<<<< HEAD
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   });
 
@@ -84,3 +108,14 @@ async function bootstrap() {
   );
 }
 bootstrap();
+=======
+  });
+
+  // Đổi cổng thành 3001 để không bị đụng hàng với Next.js (cổng 3000)
+  const port = process.env.PORT ?? 3001;
+  await app.listen(port, '0.0.0.0');
+  console.log(`🚀 Backend đang chạy tại: http://localhost:${port}`);
+  console.log(`📡 API endpoint: http://localhost:${port}/api`);
+}
+bootstrap();
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a

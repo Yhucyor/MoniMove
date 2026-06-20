@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 "use client";
 
 import { useEffect, useRef } from "react";
+=======
+'use client';
+
+import { useEffect, useRef } from 'react';
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
 
 interface StarParticlesBgProps {
   particleColor?: string;
@@ -10,10 +16,17 @@ interface StarParticlesBgProps {
 }
 
 export default function StarParticlesBg({
+<<<<<<< HEAD
   particleColor = "rgba(0, 180, 148, 0.55)", // Teal/Green glow
   lineColor = "rgba(18, 161, 192, 0.16)", // Cyan/Blue lines
   connectionDistance = 110,
   className = "",
+=======
+  particleColor = 'rgba(0, 180, 148, 0.55)', // Teal/Green glow
+  lineColor = 'rgba(18, 161, 192, 0.16)', // Cyan/Blue lines
+  connectionDistance = 110,
+  className = ''
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
 }: StarParticlesBgProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -21,7 +34,11 @@ export default function StarParticlesBg({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+<<<<<<< HEAD
     const ctx = canvas.getContext("2d");
+=======
+    const ctx = canvas.getContext('2d');
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
     if (!ctx) return;
 
     let animationFrameId: number;
@@ -64,7 +81,11 @@ export default function StarParticlesBg({
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
       // Only draw lines if mouse is inside canvas boundary
       if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
         mouseX = x;
@@ -79,8 +100,13 @@ export default function StarParticlesBg({
       mouseActive = false;
     };
 
+<<<<<<< HEAD
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseleave", handleMouseLeave);
+=======
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseleave', handleMouseLeave);
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
 
     const resizeObserver = new ResizeObserver(() => {
       if (canvas.offsetWidth && canvas.offsetHeight) {
@@ -101,7 +127,11 @@ export default function StarParticlesBg({
       cy: number,
       spikes: number,
       outerRadius: number,
+<<<<<<< HEAD
       innerRadius: number,
+=======
+      innerRadius: number
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
     ) => {
       let rot = (Math.PI / 2) * 3;
       let x = cx;
@@ -143,10 +173,17 @@ export default function StarParticlesBg({
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate(p.angle);
+<<<<<<< HEAD
 
         // Draw 4-point sparkle star
         drawStar(ctx, 0, 0, p.spikes, p.radius * 3.5, p.radius * 0.9);
 
+=======
+        
+        // Draw 4-point sparkle star
+        drawStar(ctx, 0, 0, p.spikes, p.radius * 3.5, p.radius * 0.9);
+        
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
         ctx.restore();
       });
 
@@ -195,8 +232,13 @@ export default function StarParticlesBg({
     return () => {
       cancelAnimationFrame(animationFrameId);
       resizeObserver.disconnect();
+<<<<<<< HEAD
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseleave", handleMouseLeave);
+=======
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseleave', handleMouseLeave);
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
     };
   }, [particleColor, lineColor, connectionDistance]);
 

@@ -1,15 +1,27 @@
+<<<<<<< HEAD
 "use client";
 
 import { useEffect, useState, useRef } from "react";
 import { AlertTriangle, X, MapPin, Clock, Bell, Shield } from "lucide-react";
 import { subscribeAlerts } from "../../services/firebaseRealtime";
+=======
+'use client';
+
+import { useEffect, useState, useRef } from 'react';
+import { AlertTriangle, X, MapPin, Clock, Bell, Shield } from 'lucide-react';
+import { subscribeAlerts } from '../../services/firebaseRealtime';
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
 
 interface Alert {
   id: string;
   deviceId: string;
   type: string;
   message: string;
+<<<<<<< HEAD
   severity: "critical" | "warning" | "info";
+=======
+  severity: 'critical' | 'warning' | 'info';
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
   timestamp: number;
   location?: {
     lat: number;
@@ -22,6 +34,7 @@ interface AlertsOverlayProps {
   onAlertClick?: (alert: Alert) => void;
 }
 
+<<<<<<< HEAD
 // Định nghĩa getSeverity ngoài component để tránh hoisting issue
 function getSeverity(type: string): "critical" | "warning" | "info" {
   const lowerType = (type || "").toLowerCase();
@@ -55,6 +68,14 @@ export default function AlertsOverlay({
   );
   const lastAlertIdRef = useRef<string>("");
 
+=======
+export default function AlertsOverlay({ deviceId, onAlertClick }: AlertsOverlayProps) {
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [showDangerBorder, setShowDangerBorder] = useState(false);
+  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
+  const lastAlertIdRef = useRef<string>('');
+  
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
   // Popup states
   const [showDangerPopup, setShowDangerPopup] = useState(false);
   const [showSafePopup, setShowSafePopup] = useState(false);
@@ -63,16 +84,27 @@ export default function AlertsOverlay({
   // Subscribe to alerts from Firebase
   useEffect(() => {
     if (!deviceId) return;
+<<<<<<< HEAD
 
     // Reset last alert ID when deviceId changes to correctly capture new alerts
     lastAlertIdRef.current = "";
+=======
+    
+    // Reset last alert ID when deviceId changes to correctly capture new alerts
+    lastAlertIdRef.current = '';
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
 
     const unsubscribe = subscribeAlerts(deviceId, (alertsList: any[]) => {
       const formattedAlerts: Alert[] = alertsList.map((alert: any) => ({
         id: alert.id || `${alert.timestamp}`,
         deviceId: alert.deviceId || deviceId,
+<<<<<<< HEAD
         type: alert.type || alert.alertType || "unknown",
         message: alert.message || "Cảnh báo không xác định",
+=======
+        type: alert.type || alert.alertType || 'unknown',
+        message: alert.message || 'Cảnh báo không xác định',
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
         severity: alert.severity || getSeverity(alert.type || alert.alertType),
         timestamp: alert.timestamp || Date.now(),
         location: alert.location || alert.gps,
@@ -80,7 +112,11 @@ export default function AlertsOverlay({
 
       // Sort by timestamp descending (newest first)
       formattedAlerts.sort((a, b) => b.timestamp - a.timestamp);
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
       // Keep only last 10 alerts
       const recentAlerts = formattedAlerts.slice(0, 10);
       setAlerts(recentAlerts);
@@ -89,6 +125,7 @@ export default function AlertsOverlay({
       const latestAlert = recentAlerts[0];
       if (latestAlert && latestAlert.id !== lastAlertIdRef.current) {
         lastAlertIdRef.current = latestAlert.id;
+<<<<<<< HEAD
 
         // If there's a new danger/warning alert, make sure popup is shown
         if (
@@ -97,6 +134,13 @@ export default function AlertsOverlay({
         ) {
           setShowDangerPopup(true);
           if (latestAlert.severity === "critical") {
+=======
+        
+        // If there's a new danger/warning alert, make sure popup is shown
+        if (latestAlert.severity === 'critical' || latestAlert.severity === 'warning') {
+          setShowDangerPopup(true);
+          if (latestAlert.severity === 'critical') {
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
             // Play alert sound for new critical alert
             playAlertSound();
           }
@@ -110,6 +154,7 @@ export default function AlertsOverlay({
   // Separate effect to handle danger/safe popup logic
   useEffect(() => {
     // Filter out dismissed alerts
+<<<<<<< HEAD
     const visibleAlerts = alerts.filter(
       (alert) => !dismissedAlerts.has(alert.id),
     );
@@ -120,13 +165,23 @@ export default function AlertsOverlay({
     const hasCriticalAlerts = dangerAlerts.some(
       (alert) => alert.severity === "critical",
     );
+=======
+    const visibleAlerts = alerts.filter(alert => !dismissedAlerts.has(alert.id));
+    const dangerAlerts = visibleAlerts.filter(alert => alert.severity === 'critical' || alert.severity === 'warning');
+    const hasDangerAlerts = dangerAlerts.length > 0;
+    const hasCriticalAlerts = dangerAlerts.some(alert => alert.severity === 'critical');
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
 
     if (hasDangerAlerts) {
       // DANGER STATE (Danger or Warning)
       setShowDangerBorder(hasCriticalAlerts); // Only flash red border for critical severity
       setShowDangerPopup(true);
       setShowSafePopup(false);
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
       // Clear safe popup timer if exists
       if (safePopupTimerRef.current) {
         clearTimeout(safePopupTimerRef.current);
@@ -136,15 +191,26 @@ export default function AlertsOverlay({
       // SAFE STATE (No danger or warning alerts)
       setShowDangerBorder(false);
       setShowDangerPopup(false);
+<<<<<<< HEAD
 
       // Hiển thị Popup An toàn
       setShowSafePopup(true);
 
+=======
+      
+      // Hiển thị Popup An toàn
+      setShowSafePopup(true);
+      
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
       // Auto-hide safe popup after 5 seconds
       if (safePopupTimerRef.current) {
         clearTimeout(safePopupTimerRef.current);
       }
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
       safePopupTimerRef.current = setTimeout(() => {
         setShowSafePopup(false);
       }, 5000);
@@ -158,6 +224,7 @@ export default function AlertsOverlay({
     };
   }, [alerts, dismissedAlerts]);
 
+<<<<<<< HEAD
   const playAlertSound = () => {
     // Kiểm tra settings_audio trước khi phát âm thanh
     if (
@@ -169,6 +236,35 @@ export default function AlertsOverlay({
       const audioContext = new (
         window.AudioContext || (window as any).webkitAudioContext
       )();
+=======
+  const getSeverity = (type: string): 'critical' | 'warning' | 'info' => {
+    const lowerType = (type || '').toLowerCase();
+    if (
+      lowerType.includes('ngã') || 
+      lowerType.includes('va chạm') || 
+      lowerType.includes('crash') || 
+      lowerType.includes('tilt') ||
+      lowerType.includes('cực thấp')
+    ) {
+      return 'critical';
+    }
+    if (
+      lowerType.includes('cảnh báo') || 
+      lowerType.includes('warning') || 
+      lowerType.includes('tốc độ') || 
+      lowerType.includes('pin yếu') || 
+      lowerType.includes('nhiệt độ')
+    ) {
+      return 'warning';
+    }
+    return 'info';
+  };
+
+  const playAlertSound = () => {
+    try {
+      // Create beep sound using Web Audio API
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
 
@@ -176,6 +272,7 @@ export default function AlertsOverlay({
       gainNode.connect(audioContext.destination);
 
       oscillator.frequency.value = 800; // Hz
+<<<<<<< HEAD
       oscillator.type = "sine";
 
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
@@ -183,6 +280,12 @@ export default function AlertsOverlay({
         0.01,
         audioContext.currentTime + 0.5,
       );
+=======
+      oscillator.type = 'sine';
+
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
 
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.5);
@@ -194,22 +297,36 @@ export default function AlertsOverlay({
         oscillator2.connect(gainNode2);
         gainNode2.connect(audioContext.destination);
         oscillator2.frequency.value = 1000;
+<<<<<<< HEAD
         oscillator2.type = "sine";
         gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime);
         gainNode2.gain.exponentialRampToValueAtTime(
           0.01,
           audioContext.currentTime + 0.5,
         );
+=======
+        oscillator2.type = 'sine';
+        gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
         oscillator2.start(audioContext.currentTime);
         oscillator2.stop(audioContext.currentTime + 0.5);
       }, 200);
     } catch (error) {
+<<<<<<< HEAD
       console.error("Error playing alert sound:", error);
+=======
+      console.error('Error playing alert sound:', error);
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
     }
   };
 
   const handleDismiss = (alertId: string) => {
+<<<<<<< HEAD
     setDismissedAlerts((prev) => new Set(prev).add(alertId));
+=======
+    setDismissedAlerts(prev => new Set(prev).add(alertId));
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
   };
 
   const handleCloseSafePopup = () => {
@@ -240,13 +357,18 @@ export default function AlertsOverlay({
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
+<<<<<<< HEAD
     if (seconds < 10) return "Vừa xong";
+=======
+    if (seconds < 10) return 'Vừa xong';
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
     if (seconds < 60) return `${seconds} giây trước`;
     if (minutes < 60) return `${minutes} phút trước`;
     if (hours < 24) return `${hours} giờ trước`;
     return `${days} ngày trước`;
   };
 
+<<<<<<< HEAD
   const visibleAlerts = alerts.filter(
     (alert) => !dismissedAlerts.has(alert.id),
   );
@@ -254,6 +376,11 @@ export default function AlertsOverlay({
     (a) => a.severity === "critical" || a.severity === "warning",
   );
   const hasCriticalAlerts = dangerAlerts.some((a) => a.severity === "critical");
+=======
+  const visibleAlerts = alerts.filter(alert => !dismissedAlerts.has(alert.id));
+  const dangerAlerts = visibleAlerts.filter(a => a.severity === 'critical' || a.severity === 'warning');
+  const hasCriticalAlerts = dangerAlerts.some(a => a.severity === 'critical');
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
 
   return (
     <>
@@ -283,7 +410,11 @@ export default function AlertsOverlay({
                       AN TOÀN
                     </span>
                   </div>
+<<<<<<< HEAD
 
+=======
+                  
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
                   <p className="text-[10px] font-semibold text-slate-800 leading-tight">
                     Trạng thái an toàn - Không có cảnh báo
                   </p>
@@ -306,6 +437,7 @@ export default function AlertsOverlay({
       {dangerAlerts.length > 0 && (
         <div className="fixed top-4 right-16 z-[2001] animate-bounce">
           <div className="relative">
+<<<<<<< HEAD
             <div
               className={`absolute -inset-1 ${hasCriticalAlerts ? "bg-red-500" : "bg-amber-500"} rounded-full blur opacity-75 animate-pulse`}
             ></div>
@@ -316,6 +448,12 @@ export default function AlertsOverlay({
               <span
                 className={`absolute -top-1 -right-1 bg-white ${hasCriticalAlerts ? "text-red-500 border-red-500" : "text-amber-500 border-amber-500"} text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center border-2`}
               >
+=======
+            <div className={`absolute -inset-1 ${hasCriticalAlerts ? 'bg-red-500' : 'bg-amber-500'} rounded-full blur opacity-75 animate-pulse`}></div>
+            <div className={`relative ${hasCriticalAlerts ? 'bg-red-500' : 'bg-amber-500'} text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg`}>
+              <Bell className="w-3.5 h-3.5 animate-wiggle" />
+              <span className={`absolute -top-1 -right-1 bg-white ${hasCriticalAlerts ? 'text-red-500 border-red-500' : 'text-amber-500 border-amber-500'} text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center border-2`}>
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
                 {dangerAlerts.length}
               </span>
             </div>
@@ -328,12 +466,17 @@ export default function AlertsOverlay({
         <div className="fixed top-4 right-28 z-[2000] space-y-2.5 max-w-xs w-80 animate-slideInRight-container">
           {dangerAlerts.slice(0, 3).map((alert, index) => {
             const isNew = Date.now() - alert.timestamp < 30000; // New if less than 30s old
+<<<<<<< HEAD
 
+=======
+            
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
             return (
               <div
                 key={alert.id}
                 className="animate-slideInRight"
                 style={{
+<<<<<<< HEAD
                   animationDelay: `${index * 100}ms`,
                 }}
               >
@@ -352,10 +495,27 @@ export default function AlertsOverlay({
                         : "bg-gradient-to-b from-amber-500 to-orange-600"
                     }`}
                   ></div>
+=======
+                  animationDelay: `${index * 100}ms`
+                }}
+              >
+                <div className={`relative bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] ${
+                  alert.severity === 'critical' 
+                    ? 'border-red-500/40 shadow-red-100/20' 
+                    : 'border-amber-500/40 shadow-amber-100/20'
+                }`}>
+                  {/* Left severity indicator bar */}
+                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                    alert.severity === 'critical' 
+                      ? 'bg-gradient-to-b from-red-500 to-rose-600 animate-pulse' 
+                      : 'bg-gradient-to-b from-amber-500 to-orange-600'
+                  }`}></div>
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
 
                   <div className="p-3 pl-4">
                     <div className="flex items-start gap-2.5">
                       {/* Icon */}
+<<<<<<< HEAD
                       <div
                         className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center ${
                           alert.severity === "critical"
@@ -366,11 +526,20 @@ export default function AlertsOverlay({
                         <AlertTriangle
                           className={`w-4 h-4 ${alert.severity === "critical" ? "animate-pulse" : ""}`}
                         />
+=======
+                      <div className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center ${
+                        alert.severity === 'critical' 
+                          ? 'bg-red-100 text-red-600' 
+                          : 'bg-amber-100 text-amber-600'
+                      }`}>
+                        <AlertTriangle className={`w-4 h-4 ${alert.severity === 'critical' ? 'animate-pulse' : ''}`} />
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
                       </div>
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1 mb-0.5">
+<<<<<<< HEAD
                           <span
                             className={`text-[8px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded ${
                               alert.severity === "critical"
@@ -378,6 +547,13 @@ export default function AlertsOverlay({
                                 : "bg-amber-100 text-amber-700"
                             }`}
                           >
+=======
+                          <span className={`text-[8px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                            alert.severity === 'critical' 
+                              ? 'bg-red-100 text-red-700' 
+                              : 'bg-amber-100 text-amber-700'
+                          }`}>
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
                             {alert.type}
                           </span>
                           {isNew && (
@@ -438,6 +614,7 @@ export default function AlertsOverlay({
           }
         }
         @keyframes wiggle {
+<<<<<<< HEAD
           0%,
           100% {
             transform: rotate(-3deg);
@@ -445,6 +622,10 @@ export default function AlertsOverlay({
           50% {
             transform: rotate(3deg);
           }
+=======
+          0%, 100% { transform: rotate(-3deg); }
+          50% { transform: rotate(3deg); }
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
         }
         .animate-wiggle {
           animation: wiggle 0.5s ease-in-out infinite;

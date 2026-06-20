@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { Module } from "@nestjs/common";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
@@ -37,6 +38,18 @@ import { SettingsModule } from "./settings/settings.module";
     RealtimeModule,
     SettingsModule,
   ],
+=======
+import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { FirebaseModule } from './firebase/firebase.module';
+import { DevicesModule } from './devices/devices.module';
+import { AlertsModule } from './alerts/alerts.module';
+import { AuthModule } from './auth/auth.module';
+
+@Module({
+  imports: [FirebaseModule, DevicesModule, AlertsModule, AuthModule],
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
   controllers: [AppController],
   providers: [AppService],
 })

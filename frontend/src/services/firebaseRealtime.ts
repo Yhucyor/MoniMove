@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { db } from "../core/config/firebase";
 import { ref, onValue, off, get, set } from "firebase/database";
 
@@ -22,6 +23,10 @@ function parseTimestampMs(value: unknown): number | null {
   }
   return null;
 }
+=======
+import { db } from '../core/config/firebase';
+import { ref, onValue, off, get } from 'firebase/database';
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
 
 /**
  * Subscribe to a device's position updates.
@@ -31,6 +36,7 @@ function parseTimestampMs(value: unknown): number | null {
  */
 export function subscribeDevicePosition(
   deviceId: string,
+<<<<<<< HEAD
   callback: (pos: {
     lat: number;
     lng: number;
@@ -42,6 +48,11 @@ export function subscribeDevicePosition(
     db,
     `tracking_system/devices/${deviceId}/current_data/gps`,
   );
+=======
+  callback: (pos: { lat: number; lng: number; speed?: number; heading?: number }) => void
+): () => void {
+  const posRef = ref(db, `tracking_system/devices/${deviceId}/current_data/gps`);
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
   const listener = onValue(posRef, (snapshot) => {
     const data = snapshot.val();
     if (data) {
@@ -55,7 +66,11 @@ export function subscribeDevicePosition(
   });
   // Return unsubscribe function
   return () => {
+<<<<<<< HEAD
     off(posRef, "value", listener as any);
+=======
+    off(posRef, 'value', listener as any);
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
   };
 }
 
@@ -64,11 +79,15 @@ export function subscribeDevicePosition(
  */
 export function subscribeDeviceRoute(
   deviceId: string,
+<<<<<<< HEAD
   callback: (route: {
     waypoints: [number, number][];
     distance?: number;
     duration?: number;
   }) => void,
+=======
+  callback: (route: { waypoints: [number, number][]; distance?: number; duration?: number }) => void
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
 ): () => void {
   const historyRef = ref(db, `tracking_system/devices/${deviceId}/history`);
   const listener = onValue(historyRef, (snapshot) => {
@@ -77,6 +96,7 @@ export function subscribeDeviceRoute(
       const waypoints: [number, number][] = [];
       const dates = Object.keys(data);
       const allLogs: { timestamp: number; lat: number; lng: number }[] = [];
+<<<<<<< HEAD
 
       for (const date of dates) {
         const dateLogs = data[date];
@@ -89,12 +109,27 @@ export function subscribeDeviceRoute(
             const lng = point.lng ?? point.longitude;
             if (typeof lat === "number" && typeof lng === "number") {
               allLogs.push({ timestamp: Number(tsKey), lat, lng });
+=======
+      
+      for (const date of dates) {
+        const dateLogs = data[date];
+        if (dateLogs && typeof dateLogs === 'object') {
+          for (const tsKey of Object.keys(dateLogs)) {
+            const point = dateLogs[tsKey];
+            if (point && typeof point.lat === 'number' && typeof point.lng === 'number') {
+              allLogs.push({
+                timestamp: Number(tsKey),
+                lat: point.lat,
+                lng: point.lng,
+              });
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
             }
           }
         }
       }
       allLogs.sort((a, b) => a.timestamp - b.timestamp);
       if (allLogs.length > 0) {
+<<<<<<< HEAD
         // Tính khoảng cách thực (Haversine)
         let distanceM = 0;
         for (let i = 1; i < allLogs.length; i++) {
@@ -118,12 +153,22 @@ export function subscribeDeviceRoute(
           waypoints: allLogs.map((l) => [l.lat, l.lng] as [number, number]),
           distance: Math.round(distanceM),
           duration: durationSec,
+=======
+        callback({
+          waypoints: allLogs.map(l => [l.lat, l.lng] as [number, number]),
+          distance: 6500,
+          duration: 600,
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
         });
       }
     }
   });
   return () => {
+<<<<<<< HEAD
     off(historyRef, "value", listener as any);
+=======
+    off(historyRef, 'value', listener as any);
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
   };
 }
 
@@ -133,9 +178,15 @@ export function subscribeDeviceRoute(
  */
 export function subscribeAlerts(
   deviceId: string | null,
+<<<<<<< HEAD
   callback: (alerts: any[]) => void,
 ): () => void {
   const alertsRef = ref(db, "tracking_system/alerts");
+=======
+  callback: (alerts: any[]) => void
+): () => void {
+  const alertsRef = ref(db, 'tracking_system/alerts');
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
   const listener = onValue(alertsRef, (snapshot) => {
     const data = snapshot.val();
     let arr = data ? Object.values(data) : [];
@@ -145,7 +196,11 @@ export function subscribeAlerts(
     callback(arr);
   });
   return () => {
+<<<<<<< HEAD
     off(alertsRef, "value", listener as any);
+=======
+    off(alertsRef, 'value', listener as any);
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
   };
 }
 
@@ -154,13 +209,18 @@ export function subscribeAlerts(
  */
 export function subscribeDeviceInfo(
   deviceId: string,
+<<<<<<< HEAD
   callback: (info: any) => void,
+=======
+  callback: (info: any) => void
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
 ): () => void {
   const infoRef = ref(db, `tracking_system/devices/${deviceId}`);
   const listener = onValue(infoRef, (snapshot) => {
     const data = snapshot.val();
     if (data) {
       const info = data.info || {};
+<<<<<<< HEAD
       const gps = data.current_data?.gps || {};
 
       // lastUpdate: uu tien gps.updated_at (realtime nhat), sau do last_ping
@@ -193,12 +253,24 @@ export function subscribeDeviceInfo(
         connectionStatus,
         battery: data.current_data?.battery ?? null,
         lastUpdate,
+=======
+      callback({
+        id: deviceId,
+        name: info.device_name || info.license_plate || deviceId,
+        status: info.status || 'active',
+        battery: data.current_data?.battery || 85,
+        lastUpdate: info.last_ping ? info.last_ping * 1000 : Date.now(),
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
         current_data: data.current_data || null,
       });
     }
   });
   return () => {
+<<<<<<< HEAD
     off(infoRef, "value", listener as any);
+=======
+    off(infoRef, 'value', listener as any);
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
   };
 }
 
@@ -209,6 +281,7 @@ export async function getDeviceInfo(deviceId: string): Promise<any> {
   const infoRef = ref(db, `tracking_system/devices/${deviceId}`);
   const snapshot = await get(infoRef);
   const data = snapshot.val();
+<<<<<<< HEAD
   if (!data) throw new Error("No device info found");
   const info = data.info || {};
   const gps = data.current_data?.gps || {};
@@ -240,6 +313,16 @@ export async function getDeviceInfo(deviceId: string): Promise<any> {
     connectionStatus,
     battery: data.current_data?.battery ?? null,
     lastUpdate,
+=======
+  if (!data) throw new Error('No device info found');
+  const info = data.info || {};
+  return {
+    id: deviceId,
+    name: info.device_name || info.license_plate || deviceId,
+    status: info.status || 'active',
+    battery: data.current_data?.battery || 85,
+    lastUpdate: info.last_ping ? info.last_ping * 1000 : Date.now(),
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
     current_data: data.current_data || null,
   };
 }
@@ -247,6 +330,7 @@ export async function getDeviceInfo(deviceId: string): Promise<any> {
 /**
  * Get current position of a device (one-time read).
  */
+<<<<<<< HEAD
 export async function getCurrentPosition(
   deviceId: string,
 ): Promise<{
@@ -259,6 +343,10 @@ export async function getCurrentPosition(
     db,
     `tracking_system/devices/${deviceId}/current_data/gps`,
   );
+=======
+export async function getCurrentPosition(deviceId: string): Promise<{ lat: number; lng: number; speed?: number; heading?: number } | null> {
+  const posRef = ref(db, `tracking_system/devices/${deviceId}/current_data/gps`);
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
   const snapshot = await get(posRef);
   const data = snapshot.val();
   if (!data) return null;
@@ -278,6 +366,7 @@ export async function getDeviceRoute(deviceId: string): Promise<any> {
   const snapshot = await get(historyRef);
   const data = snapshot.val();
   if (!data) return { waypoints: [] };
+<<<<<<< HEAD
 
   const waypoints: [number, number][] = [];
   const dates = Object.keys(data);
@@ -293,11 +382,30 @@ export async function getDeviceRoute(deviceId: string): Promise<any> {
         const lng = point.lng ?? point.longitude;
         if (typeof lat === "number" && typeof lng === "number") {
           allLogs.push({ timestamp: Number(tsKey), lat, lng });
+=======
+  
+  const waypoints: [number, number][] = [];
+  const dates = Object.keys(data);
+  const allLogs: { timestamp: number; lat: number; lng: number }[] = [];
+  
+  for (const date of dates) {
+    const dateLogs = data[date];
+    if (dateLogs && typeof dateLogs === 'object') {
+      for (const tsKey of Object.keys(dateLogs)) {
+        const point = dateLogs[tsKey];
+        if (point && typeof point.lat === 'number' && typeof point.lng === 'number') {
+          allLogs.push({
+            timestamp: Number(tsKey),
+            lat: point.lat,
+            lng: point.lng,
+          });
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
         }
       }
     }
   }
   allLogs.sort((a, b) => a.timestamp - b.timestamp);
+<<<<<<< HEAD
   let distanceM = 0;
   for (let i = 1; i < allLogs.length; i++) {
     const p1 = allLogs[i - 1],
@@ -332,3 +440,11 @@ export async function writeDeviceSettings(
   const settingsRef = ref(db, `tracking_system/settings/${deviceId}`);
   await set(settingsRef, settings);
 }
+=======
+  return {
+    waypoints: allLogs.map(l => [l.lat, l.lng] as [number, number]),
+    distance: 6500,
+    duration: 600,
+  };
+}
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
