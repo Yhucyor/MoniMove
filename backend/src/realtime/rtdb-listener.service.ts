@@ -72,6 +72,9 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
 
   // Trip state per device
   private tripStates = new Map<string, DeviceTripState>();
+  
+  // Tilt state per device (to detect edge from false -> true)
+  private tiltStates = new Map<string, boolean>();
 
   constructor(
     private readonly gateway: RealtimeGateway,
@@ -154,6 +157,10 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
         if (lat === 0 && lng === 0) continue;
 
         await this.handleTripDetection(deviceId, lat, lng, gps.speed ?? 0);
+
+        // ── Tilt Detection ───────────────────────────────────────────────
+        const isTilted = mpu.is_tilted === true;
+        await this.handleTiltDetection(deviceId, isTilted, lat, lng);
       }
     } catch (err: any) {
       this.logger.warn("Device poll error: " + err.message);
@@ -265,6 +272,37 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
         }
       }
     }
+  }
+
+  // ── Xử lý ngã đổ (Tilt detection) ─────────────────────────────────────────
+  private async handleTiltDetection(deviceId: string, isTilted: boolean, lat: number, lng: number) {
+    const wasTilted = this.tiltStates.get(deviceId) || false;
+    
+    // Chỉ trigger tạo alert khi chuyển từ KHÔNG NGÃ sang NGÃ (edge trigger)
+    if (isTilted && !wasTilted) {
+      this.logger.log(`⚠️ [${deviceId}] Fall detected (backend). Creating alert...`);
+      
+      const alertPayload = {
+        deviceId,
+        alertType: "Ngã đổ",
+        message: "Cảnh báo nghiêm trọng: Thiết bị bị ngã! Cần hỗ trợ khẩn cấp.",
+        severity: "critical",
+        timestamp: Date.now(),
+        ...(lat && lng ? { location: { lat, lng } } : {})
+      };
+
+      try {
+        await fetch(`${DB_URL}/tracking_system/alerts.json?auth=${DB_SECRET}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(alertPayload)
+        });
+      } catch (err: any) {
+        this.logger.warn(`Failed to create tilt alert for ${deviceId}: ${err.message}`);
+      }
+    }
+    
+    this.tiltStates.set(deviceId, isTilted);
   }
 
   private async saveHistoryPoint(
