@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   MapPin,
   Navigation,
@@ -88,7 +88,21 @@ export default function DeviceCard({
   const mpu = device.current_data?.mpu6050;
 
   const isTilted = mpu?.is_tilted ?? false;
-  const buzzerActive = device.current_data?.buzzer || (device as any).controls?.buzzer || isTilted || false;
+  const [tiltBuzzerActive, setTiltBuzzerActive] = useState(false);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isTilted) {
+      timer = setTimeout(() => {
+        setTiltBuzzerActive(true);
+      }, 15000);
+    } else {
+      setTiltBuzzerActive(false);
+    }
+    return () => clearTimeout(timer);
+  }, [isTilted]);
+
+  const buzzerActive = device.current_data?.buzzer || (device as any).controls?.buzzer || tiltBuzzerActive || false;
 
   // Ưu tiên GPS updated_at (realtime nhất), sau đó lastUpdate, rồi connectionStatus từ API
   const gpsUpdatedAt = gps?.updated_at ? gps.updated_at * 1000 : undefined;
