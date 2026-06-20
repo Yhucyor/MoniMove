@@ -41,7 +41,10 @@ export default function ListDevicesTab() {
       await Promise.all(
         devices.map(async (d) => {
           try {
-            details[d.id] = await getDeviceInfo(d.id);
+            const info = await getDeviceInfo(d.id);
+            if (info) {
+              details[d.id] = info;
+            }
           } catch {
             // skip
           }
