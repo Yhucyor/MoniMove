@@ -12,14 +12,17 @@ export class MailService {
 
   constructor() {
     const port = Number(process.env.SMTP_PORT ?? 465);
-    const pass = (process.env.SMTP_PASS ?? "").replace(/\s+/g, "");
+    // Strip spaces and surrounding quotes that users might accidentally add when deploying
+    const pass = (process.env.SMTP_PASS ?? "").replace(/\s+/g, "").replace(/^"|"$|^'|'$/g, "");
+    const user = (process.env.SMTP_USER ?? "").replace(/^"|"$|^'|'$/g, "").trim();
+    const host = (process.env.SMTP_HOST ?? "smtp.gmail.com").replace(/^"|"$|^'|'$/g, "").trim();
 
     this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      host,
       port,
       secure: port === 465,
       auth: {
-        user: process.env.SMTP_USER,
+        user,
         pass,
       },
     });
