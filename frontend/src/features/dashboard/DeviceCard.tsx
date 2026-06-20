@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { DeviceInfo } from "../../services/api";
 import { getConnectionStatus, formatLastSeen } from "../../utils/deviceStatus";
-import MapModal from "./MapModal";
 
 interface DeviceCardProps {
   device: DeviceInfo;
@@ -88,7 +87,6 @@ export default function DeviceCard({
   const gps = device.current_data?.gps;
   const mpu = device.current_data?.mpu6050;
   const buzzerActive = device.current_data?.buzzer ?? false;
-  const [showMap, setShowMap] = useState(false);
 
   const isTilted = mpu?.is_tilted ?? false;
 
@@ -200,14 +198,6 @@ export default function DeviceCard({
             <h4 className="flex items-center text-xs font-extrabold text-cyan-700 uppercase tracking-wider">
               <MapPin className="mr-1.5 h-4 w-4 text-cyan-600" /> Định vị GPS
             </h4>
-            {gps && (
-              <button
-                onClick={() => setShowMap(true)}
-                className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-cyan-500 hover:bg-cyan-600 px-3 py-1.5 rounded-full transition-colors shadow-sm hover:shadow cursor-pointer active:scale-95"
-              >
-                <MapPin className="w-3 h-3" /> Mở bản đồ
-              </button>
-            )}
           </div>
           {gps ? (
             <div className="space-y-3">
@@ -380,17 +370,6 @@ export default function DeviceCard({
           </span>
         </div>
       </div>
-
-      {/* Map Modal */}
-      {showMap && gps && (
-        <MapModal
-          deviceId={device.id}
-          deviceName={device.name}
-          lat={gps.latitude}
-          lng={gps.longitude}
-          onClose={() => setShowMap(false)}
-        />
-      )}
     </div>
   );
 }
