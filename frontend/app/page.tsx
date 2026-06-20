@@ -17,7 +17,11 @@ export default function Home() {
             </svg>
           </div>
           <span className="text-[21px] font-extrabold tracking-tight text-[#0f172a] antialiased transition-colors duration-300 group-hover:text-cyan-600">
+<<<<<<< HEAD
+            MoveMonitor
+=======
             MoniMove
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
           </span>
         </div>
 
@@ -35,20 +39,32 @@ export default function Home() {
             rel="noopener noreferrer"
             className="block select-none rounded-full border border-transparent bg-[#f3f4f6] px-4 py-2 text-xs font-semibold tracking-wide text-[#374151] transition-all duration-300 hover:border-cyan-300/30 hover:bg-white hover:text-cyan-600 hover:shadow-[0_4px_12px_rgba(18,161,192,0.1)] active:scale-95 md:text-sm"
           >
+<<<<<<< HEAD
+            About MoveMonitor
+=======
             About MoniMove
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
           </a>
         </div>
       </header>
 
       <main className="z-10 mx-auto flex w-full max-w-4xl flex-1 -translate-y-2 select-none flex-col items-center justify-center px-6 text-center">
         <h1 className="mb-4 text-[42px] font-black leading-[1.12] tracking-tight text-[#1a202c] sm:text-[54px] md:mb-5 md:text-[64px] lg:text-[72px]">
+<<<<<<< HEAD
+          Smart <span className="bg-gradient-to-r from-[#12a1c0] to-[#00b494] bg-clip-text text-transparent">MoveMonitor</span>,
+=======
           Smart <span className="bg-gradient-to-r from-[#12a1c0] to-[#00b494] bg-clip-text text-transparent">MoniMove</span>,
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
           <br />
           Effortless Move.
         </h1>
 
         <p className="mb-6 max-w-2xl px-4 text-sm font-normal leading-relaxed text-slate-500 md:mb-8 md:text-base">
+<<<<<<< HEAD
+          MoveMonitor là người bạn đồng hành tối ưu cho ứng dụng IoT. Hệ thống theo dõi hành trình, cập nhật vị trí liên tục
+=======
           MoniMove là người bạn đồng hành tối ưu cho ứng dụng IoT. Hệ thống theo dõi hành trình, cập nhật vị trí liên tục
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
           và hỗ trợ cảnh báo khẩn cấp khi phát hiện va chạm.
         </p>
 
@@ -62,7 +78,11 @@ export default function Home() {
       </main>
 
       <footer className="z-10 w-full py-4 text-center text-[11px] font-medium text-slate-400">
+<<<<<<< HEAD
+        © 2026 MoveMonitor App. Hỗ trợ giám sát hành trình toàn diện.
+=======
         © 2026 MoniMove App. Hỗ trợ giám sát hành trình toàn diện.
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
       </footer>
 
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />

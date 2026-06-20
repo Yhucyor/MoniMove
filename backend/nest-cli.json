@@ -1,9 +1,18 @@
 {
+<<<<<<< HEAD
+=======
   "$schema": "https://json.schemastore.org/nest-cli",
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
   "collection": "@nestjs/schematics",
   "sourceRoot": "src",
   "compilerOptions": {
     "deleteOutDir": true,
+<<<<<<< HEAD
+    "assets": [
+      { "include": "config/*.json", "outDir": "dist" }
+    ]
+=======
     "assets": ["**/*.json"]
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
   }
 }

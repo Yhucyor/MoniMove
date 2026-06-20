@@ -1,7 +1,13 @@
 {
+<<<<<<< HEAD
+  "name": "monimove-backend",
+  "version": "2.0.0",
+  "description": "MoveMonitor IoT Backend — Merged v2 + v3",
+=======
   "name": "backend",
   "version": "0.0.1",
   "description": "",
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
   "author": "",
   "private": true,
   "license": "UNLICENSED",
@@ -16,6 +22,28 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
+<<<<<<< HEAD
+    "test:e2e": "jest --config ./test/jest-e2e.json"
+  },
+  "dependencies": {
+    "@nestjs-modules/mailer": "^2.0.2",
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/platform-socket.io": "^11.1.26",
+    "@nestjs/swagger": "^11.4.4",
+    "@nestjs/websockets": "^11.1.26",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "dotenv": "^17.4.2",
+    "firebase-admin": "^13.10.0",
+    "nodemailer": "^8.0.11",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "socket.io": "^4.8.3",
+    "swagger-ui-express": "^5.0.1",
+    "update": "^0.7.4"
+=======
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
@@ -27,6 +55,7 @@
     "firebase-admin": "^13.10.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -37,6 +66,10 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.0",
+<<<<<<< HEAD
+    "@types/nodemailer": "^8.0.1",
+=======
+>>>>>>> f72d72325236dd648406a88ee667af6334effd3a
     "@types/supertest": "^7.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
