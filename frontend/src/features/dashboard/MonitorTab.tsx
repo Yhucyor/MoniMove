@@ -70,15 +70,7 @@ export default function MonitorTab({
         </button>
       </div>
 
-      {/* Realtime status — top right */}
-      <div className="absolute top-4 right-4 z-[2000]">
-        <RealtimeStatusBar
-          connectionState={connectionState}
-          lastPing={lastPing}
-          lastUpdateAt={lastUpdateAt}
-          deviceId={deviceId}
-        />
-      </div>
+      {/* Realtime status removed as requested */}
 
       {/* Map */}
       <LeafletMap

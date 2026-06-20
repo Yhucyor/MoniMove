@@ -422,17 +422,7 @@ export default function AdminOverviewTab() {
             <TrendingUp className="h-3 w-3 text-[#00b494]" />
             Realtime sync: Bật
           </div>
-          <div className="flex items-center gap-1.5">
-            <Zap
-              className={`h-3 w-3 ${isConnected ? "text-amber-500" : "text-slate-400"}`}
-            />
-            WebSocket: {isConnected ? `Live` : connectionState}
-            {wsAlertCount > 0 && (
-              <span className="text-amber-600 ml-1">
-                +{wsAlertCount} alerts
-              </span>
-            )}
-          </div>
+          {/* WebSocket status removed as requested */}
           <div className="ml-auto text-[9px] text-slate-400">
             MoveMonitor · {new Date().getFullYear()}
           </div>

@@ -137,16 +137,7 @@ export default function SystemMonitorTab({
         )}
       </div>
 
-      {/* Realtime status — top right */}
-      <div className="absolute top-4 right-4 z-[2000]">
-        <RealtimeStatusBar
-          connectionState={connectionState}
-          lastPing={lastPing}
-          lastUpdateAt={lastUpdateAt}
-          deviceId={selectedDeviceId}
-        />
-      </div>
-
+      {/* Realtime status removed as requested */}
       {/* Live data strip — bottom */}
       {liveData && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[2000] flex items-center gap-3 bg-slate-900/90 backdrop-blur-md text-white px-4 py-2.5 rounded-full shadow-2xl border border-white/10 text-xs font-bold whitespace-nowrap">

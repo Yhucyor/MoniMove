@@ -88,12 +88,7 @@ export default function DashboardOverviewTab({
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <RealtimeStatusBar
-            connectionState={wsConnectionState}
-            lastPing={lastPing}
-            lastUpdateAt={lastUpdateAt}
-            deviceId={selectedId ?? undefined}
-          />
+          {/* Realtime status bar removed */}
           <span
             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold border ${
               isOnline
