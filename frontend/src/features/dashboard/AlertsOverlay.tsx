@@ -85,6 +85,19 @@ export default function AlertsOverlay({
       const recentAlerts = formattedAlerts.slice(0, 10);
       setAlerts(recentAlerts);
 
+      // Tự động bỏ qua (dismiss) các cảnh báo đã cũ hơn 5 phút
+      recentAlerts.forEach((alert) => {
+        const age = Date.now() - alert.timestamp;
+        if (age >= 5 * 60 * 1000) {
+          setDismissedAlerts((prev) => new Set(prev).add(alert.id));
+        } else {
+          // Lên lịch ẩn cảnh báo khi nó đạt đủ 5 phút tuổi
+          setTimeout(() => {
+            setDismissedAlerts((prev) => new Set(prev).add(alert.id));
+          }, 5 * 60 * 1000 - age);
+        }
+      });
+
       // Check for new critical/warning alerts to play sound and show popup
       const latestAlert = recentAlerts[0];
       if (latestAlert && latestAlert.id !== lastAlertIdRef.current) {

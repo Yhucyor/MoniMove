@@ -36,15 +36,18 @@ const SENSITIVITY_MAP: Record<number, number> = {
   5: 1.5,
 };
 
+type LocalDeviceSettings = DeviceSettings & { accel_threshold?: number };
+
 export default function AdminDeviceSettingsModal({
   device,
   onClose,
 }: AdminDeviceSettingsModalProps) {
-  const [settings, setSettings] = useState<DeviceSettings>({
+  const [settings, setSettings] = useState<LocalDeviceSettings>({
     sos_email: "",
     sos_phone: "",
     fallAngleThreshold: 45,
-    impactSensitivity: 2.5,
+    impactSensitivity: 3,
+    accel_threshold: 2.5,
     speedThreshold: 80,
     enable_sms: false,
     enable_audio: true,
@@ -73,9 +76,9 @@ export default function AdminDeviceSettingsModal({
       .finally(() => setLoading(false));
   }, [device.id]);
 
-  const update = <K extends keyof DeviceSettings>(
+  const update = <K extends keyof LocalDeviceSettings>(
     key: K,
-    value: DeviceSettings[K],
+    value: LocalDeviceSettings[K],
   ) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
     setHasUnsaved(true);
@@ -105,7 +108,8 @@ export default function AdminDeviceSettingsModal({
       sos_email: "",
       sos_phone: "",
       fallAngleThreshold: 45,
-      impactSensitivity: 2.5,
+      impactSensitivity: 3,
+      accel_threshold: 2.5,
       speedThreshold: 80,
       enable_sms: false,
       enable_audio: true,
@@ -254,7 +258,8 @@ export default function AdminDeviceSettingsModal({
                     onChange={(e) => {
                       const val = Number(e.target.value);
                       setSensitivity(val);
-                      update("impactSensitivity", SENSITIVITY_MAP[val]);
+                      update("impactSensitivity", val);
+                      update("accel_threshold", SENSITIVITY_MAP[val]);
                     }}
                     className="w-full h-2 bg-slate-200 rounded-lg appearance-none accent-[#00b494] cursor-pointer"
                   />
@@ -273,7 +278,7 @@ export default function AdminDeviceSettingsModal({
                       Góc nghiêng báo động ngã
                     </label>
                     <span className="rounded-lg bg-purple-50 border border-purple-100 px-2.5 py-1 text-xs font-bold text-purple-700">
-                      {settings.fallAngleThreshold}°
+                      {settings.fallAngleThreshold ?? 45}°
                     </span>
                   </div>
                   <input
@@ -281,7 +286,7 @@ export default function AdminDeviceSettingsModal({
                     min="20"
                     max="90"
                     step="5"
-                    value={settings.fallAngleThreshold}
+                    value={settings.fallAngleThreshold ?? 45}
                     onChange={(e) =>
                       update("fallAngleThreshold", Number(e.target.value))
                     }
@@ -302,7 +307,7 @@ export default function AdminDeviceSettingsModal({
                       Tốc độ cảnh báo
                     </label>
                     <span className="rounded-lg bg-amber-50 border border-amber-100 px-2.5 py-1 text-xs font-bold text-amber-600">
-                      {settings.speedThreshold} km/h
+                      {settings.speedThreshold ?? 80} km/h
                     </span>
                   </div>
                   <input
@@ -310,7 +315,7 @@ export default function AdminDeviceSettingsModal({
                     min="30"
                     max="200"
                     step="10"
-                    value={settings.speedThreshold}
+                    value={settings.speedThreshold ?? 80}
                     onChange={(e) =>
                       update("speedThreshold", Number(e.target.value))
                     }
@@ -331,23 +336,25 @@ export default function AdminDeviceSettingsModal({
                   Kênh thông báo
                 </h3>
 
-                {[
-                  {
-                    key: "enable_audio" as keyof DeviceSettings,
-                    label: "Còi báo động Web",
-                    desc: "Phát âm thanh trên giao diện khi có cảnh báo",
-                    color: "purple",
-                  },
-                  {
-                    key: "enable_sms" as keyof DeviceSettings,
-                    label: "SMS khẩn cấp",
-                    desc: "Gửi SMS đến số điện thoại SOS (yêu cầu tích hợp SMS gateway)",
-                    color: "blue",
-                    disabled: true,
-                  },
-                ].map((item) => (
+                {(
+                  [
+                    {
+                      key: "enable_audio",
+                      label: "Còi báo động Web",
+                      desc: "Phát âm thanh trên giao diện khi có cảnh báo",
+                      color: "purple",
+                    },
+                    {
+                      key: "enable_sms",
+                      label: "SMS khẩn cấp",
+                      desc: "Gửi SMS đến số điện thoại SOS (yêu cầu tích hợp SMS gateway)",
+                      color: "blue",
+                      disabled: true,
+                    },
+                  ] as Array<{ key: keyof LocalDeviceSettings, label: string, desc: string, color: string, disabled?: boolean }>
+                ).map((item) => (
                   <div
-                    key={item.key as string}
+                    key={item.key}
                     className="flex items-center justify-between gap-4"
                   >
                     <div className="flex-1">
@@ -369,7 +376,7 @@ export default function AdminDeviceSettingsModal({
                         checked={Boolean(settings[item.key])}
                         disabled={item.disabled}
                         onChange={(e) =>
-                          update(item.key, e.target.checked as any)
+                          update(item.key, e.target.checked)
                         }
                         className="peer sr-only"
                       />

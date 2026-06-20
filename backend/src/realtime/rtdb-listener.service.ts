@@ -14,10 +14,11 @@ const DB_URL =
 const DB_SECRET = process.env.FIREBASE_RTDB_SECRET || "";
 
 // ── Trip detection thresholds ────────────────────────────────────────────────
-const MOVEMENT_SPEED_KMH = 2; // tốc độ tối thiểu coi là di chuyển
-const MIN_DISTANCE_M = 30; // hoặc dịch chuyển ≥ 30m (kể cả speed=0)
-const SAVE_INTERVAL_MS = 60_000; // lưu tối đa 1 điểm/phút khi đang đi
+const MOVEMENT_SPEED_KMH = 1; // tốc độ tối thiểu coi là di chuyển
+const MIN_DISTANCE_M = 5; // hoặc dịch chuyển ≥ 5m
+const SAVE_INTERVAL_MS = 5_000; // lưu điểm liên tục mỗi 5s khi đang đi
 const STOP_TIMEOUT_MS = 5 * 60_000; // dừng ≥ 5 phút → kết thúc trip
+const MIN_TRIP_POINTS = 2; // số điểm tối thiểu để lưu trip vào lịch sử
 
 /**
  * Haversine distance (metres) giữa 2 toạ độ
@@ -41,6 +42,12 @@ function haversineM(
 
 interface DeviceTripState {
   isInTrip: boolean;
+  tripId: string | null; // ID của chuyến hiện tại
+  tripStartedAt: number; // ms — thời điểm bắt đầu trip
+  tripStartLat: number;
+  tripStartLng: number;
+  tripPoints: { lat: number; lng: number; speed: number; timestamp: number }[];
+  tripDistanceM: number; // tổng quãng đường chuyến này
   lastMovedAt: number; // ms — lần cuối phát hiện di chuyển
   lastSavedAt: number; // ms — lần cuối lưu vào history
   lastSavedLat: number;
@@ -166,6 +173,12 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
     if (!this.tripStates.has(deviceId)) {
       this.tripStates.set(deviceId, {
         isInTrip: false,
+        tripId: null,
+        tripStartedAt: 0,
+        tripStartLat: lat,
+        tripStartLng: lng,
+        tripPoints: [],
+        tripDistanceM: 0,
         lastMovedAt: 0,
         lastSavedAt: 0,
         lastSavedLat: lat,
@@ -189,20 +202,34 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
       state.lastMovedAt = now;
 
       if (!state.isInTrip) {
+        // ── Bắt đầu chuyến mới ───────────────────────────────────────────
         state.isInTrip = true;
+        state.tripId = `trip_${now}`;
+        state.tripStartedAt = now;
+        state.tripStartLat = lat;
+        state.tripStartLng = lng;
+        state.tripPoints = [];
+        state.tripDistanceM = 0;
         this.logger.log(
-          `🚴 [${deviceId}] Trip started — speed=${speed} km/h dist=${distFromLastSave.toFixed(0)}m`,
+          `🚴 [${deviceId}] Trip started [${state.tripId}] — speed=${speed} km/h dist=${distFromLastSave.toFixed(0)}m`,
         );
+      }
+
+      // ── Cộng dồn khoảng cách trong chuyến ───────────────────────────────
+      if (state.tripPoints.length > 0) {
+        const prev = state.tripPoints[state.tripPoints.length - 1];
+        state.tripDistanceM += haversineM(prev.lat, prev.lng, lat, lng);
       }
 
       // ── Lưu điểm nếu đủ khoảng thời gian HOẶC đủ khoảng cách ────────────
       const timeSinceLastSave = now - state.lastSavedAt;
       const shouldSaveByTime = timeSinceLastSave >= SAVE_INTERVAL_MS;
       const shouldSaveByDist =
-        distFromLastSave >= MIN_DISTANCE_M && timeSinceLastSave >= 10_000; // ít nhất 10s
+        distFromLastSave >= MIN_DISTANCE_M && timeSinceLastSave >= 10_000;
 
       if (shouldSaveByTime || shouldSaveByDist) {
-        await this.saveHistoryPoint(deviceId, lat, lng, speed, now);
+        await this.saveHistoryPoint(deviceId, state.tripId!, lat, lng, speed, now);
+        state.tripPoints.push({ lat, lng, speed, timestamp: now });
         state.lastSavedAt = now;
         state.lastSavedLat = lat;
         state.lastSavedLng = lng;
@@ -212,18 +239,37 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
       if (state.isInTrip) {
         const stoppedDurationMs = now - state.lastMovedAt;
         if (stoppedDurationMs >= STOP_TIMEOUT_MS) {
+          // ── Kết thúc chuyến — lưu tóm tắt vào lịch sử ──────────────────
+          const tripId = state.tripId!;
+          const durationSec = Math.round((state.lastMovedAt - state.tripStartedAt) / 1000);
+          if (state.tripPoints.length >= MIN_TRIP_POINTS) {
+            await this.saveTripSummary(deviceId, tripId, {
+              startedAt: state.tripStartedAt,
+              endedAt: state.lastMovedAt,
+              durationSec,
+              distanceM: Math.round(state.tripDistanceM),
+              pointCount: state.tripPoints.length,
+              startLat: state.tripStartLat,
+              startLng: state.tripStartLng,
+              endLat: state.lastSavedLat,
+              endLng: state.lastSavedLng,
+            });
+          }
           state.isInTrip = false;
+          state.tripId = null;
+          state.tripPoints = [];
+          state.tripDistanceM = 0;
           this.logger.log(
-            `🛑 [${deviceId}] Trip ended — stopped for ${Math.round(stoppedDurationMs / 60000)}min`,
+            `🛑 [${deviceId}] Trip ended [${tripId}] — ${Math.round(stoppedDurationMs / 60000)}min stop`,
           );
         }
       }
     }
   }
 
-  // ── Ghi một điểm GPS vào Firebase history ────────────────────────────────
   private async saveHistoryPoint(
     deviceId: string,
+    tripId: string,
     lat: number,
     lng: number,
     speed: number,
@@ -236,7 +282,8 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
     const dateKey = `${y}-${mo}-${d}`;
     const timestampSec = Math.floor(nowMs / 1000);
 
-    const url = `${DB_URL}/tracking_system/devices/${deviceId}/history/${dateKey}/${timestampSec}.json${DB_SECRET ? `?auth=${DB_SECRET}` : ""}`;
+    // Lưu điểm vào history/{dateKey}/{tripId}/{timestamp}
+    const url = `${DB_URL}/tracking_system/devices/${deviceId}/history/${dateKey}/${tripId}/${timestampSec}.json${DB_SECRET ? `?auth=${DB_SECRET}` : ""}`;
 
     try {
       await fetch(url, {
@@ -260,7 +307,39 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  // ── Poll alerts ───────────────────────────────────────────────────────────
+  // ── Lưu tóm tắt chuyến đi hoàn thành ─────────────────────────────────────
+  private async saveTripSummary(
+    deviceId: string,
+    tripId: string,
+    summary: {
+      startedAt: number;
+      endedAt: number;
+      durationSec: number;
+      distanceM: number;
+      pointCount: number;
+      startLat: number;
+      startLng: number;
+      endLat: number;
+      endLng: number;
+    },
+  ) {
+    const url = `${DB_URL}/tracking_system/devices/${deviceId}/trips/${tripId}.json${DB_SECRET ? `?auth=${DB_SECRET}` : ""}`;
+    try {
+      await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(summary),
+      });
+      const km = (summary.distanceM / 1000).toFixed(2);
+      const mins = Math.round(summary.durationSec / 60);
+      this.logger.log(`📦 [${deviceId}] Trip summary saved [${tripId}]: ${km}km, ${mins}min, ${summary.pointCount} pts`);
+    } catch (err: any) {
+      this.logger.warn(`Trip summary write error [${deviceId}]: ${err.message}`);
+    }
+  }
+
+  private isInitialAlertPoll = true;
+
   private async pollAlerts() {
     try {
       const res = await fetch(
@@ -268,12 +347,19 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
       );
       if (!res.ok) return;
       const data: Record<string, any> = await res.json();
-      if (!data) return;
+      
+      if (!data) {
+        this.isInitialAlertPoll = false;
+        return;
+      }
 
       for (const [alertId, alert] of Object.entries(data)) {
         if (this.knownAlertIds.has(alertId)) continue;
         this.knownAlertIds.add(alertId);
-        if (this.lastAlertCount === 0) continue;
+        
+        // Skip pushing/emailing if this is the first time we poll
+        // (to avoid spamming old alerts on server restart)
+        if (this.isInitialAlertPoll) continue;
 
         this.gateway.pushAlert({
           id: alertId,
@@ -289,7 +375,7 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
           `🚨 New alert pushed via WS: ${alert.alertType} for ${alert.deviceId}`,
         );
 
-        // Gửi email khẩn cấp nếu là loại nguy hiểm (bởi vì ESP32 write trực tiếp vào Firebase, bỏ qua API)
+        // Gửi email khẩn cấp nếu là loại nguy hiểm
         if (alert.alertType && isEmergency(alert.alertType)) {
           this.processEmergencyEmail({
             id: alertId,
@@ -302,7 +388,7 @@ export class RtdbListenerService implements OnModuleInit, OnModuleDestroy {
         }
       }
 
-      this.lastAlertCount = Object.keys(data).length;
+      this.isInitialAlertPoll = false;
     } catch (err: any) {
       this.logger.warn("Alert poll error: " + err.message);
     }

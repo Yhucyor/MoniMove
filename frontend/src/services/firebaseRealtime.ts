@@ -68,64 +68,153 @@ export function subscribeDeviceRoute(
     waypoints: [number, number][];
     distance?: number;
     duration?: number;
+    tripId?: string;
   }) => void,
 ): () => void {
-  const historyRef = ref(db, `tracking_system/devices/${deviceId}/history`);
+  // Chỉ lấy lịch sử hôm nay
+  const today = new Date();
+  const dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const historyRef = ref(db, `tracking_system/devices/${deviceId}/history/${dateKey}`);
+
   const listener = onValue(historyRef, (snapshot) => {
     const data = snapshot.val();
-    if (data) {
-      const waypoints: [number, number][] = [];
-      const dates = Object.keys(data);
-      const allLogs: { timestamp: number; lat: number; lng: number }[] = [];
+    if (!data || typeof data !== "object") {
+      callback({ waypoints: [], distance: 0, duration: 0 });
+      return;
+    }
 
-      for (const date of dates) {
-        const dateLogs = data[date];
-        if (dateLogs && typeof dateLogs === "object") {
-          for (const tsKey of Object.keys(dateLogs)) {
-            const point = dateLogs[tsKey];
-            if (!point) continue;
-            // Hỗ trợ cả lat/lng (legacy) và latitude/longitude (hardware)
-            const lat = point.lat ?? point.latitude;
-            const lng = point.lng ?? point.longitude;
-            if (typeof lat === "number" && typeof lng === "number") {
-              allLogs.push({ timestamp: Number(tsKey), lat, lng });
-            }
+    // Kiểm tra cấu trúc: có tripId lồng bên trong không?
+    const firstVal = Object.values(data)[0];
+    const isNewStructure = firstVal && typeof firstVal === "object" && !("lat" in firstVal) && !("latitude" in firstVal);
+
+    interface LogPoint { timestamp: number; lat: number; lng: number; speed: number }
+
+    if (isNewStructure) {
+      // Cấu trúc mới: history/{date}/{tripId}/{timestamp} → chỉ hiện trip mới nhất
+      const trips: { tripId: string; points: LogPoint[] }[] = [];
+
+      for (const [tripId, tripData] of Object.entries(data as Record<string, any>)) {
+        if (!tripData || typeof tripData !== "object") continue;
+        const points: LogPoint[] = [];
+        for (const [tsKey, point] of Object.entries(tripData as Record<string, any>)) {
+          if (!point) continue;
+          const lat = point.lat ?? point.latitude;
+          const lng = point.lng ?? point.longitude;
+          if (typeof lat === "number" && typeof lng === "number") {
+            points.push({ timestamp: Number(tsKey), lat, lng, speed: point.speed ?? 0 });
           }
+        }
+        if (points.length > 0) {
+          points.sort((a, b) => a.timestamp - b.timestamp);
+          trips.push({ tripId, points });
+        }
+      }
+
+      // Sắp xếp trips theo timestamp đầu tiên, lấy trip cuối cùng (mới nhất)
+      trips.sort((a, b) => a.points[0].timestamp - b.points[0].timestamp);
+      const latestTrip = trips[trips.length - 1];
+
+      if (!latestTrip || latestTrip.points.length === 0) {
+        callback({ waypoints: [], distance: 0, duration: 0 });
+        return;
+      }
+
+      const pts = latestTrip.points;
+      const lastPoint = pts[pts.length - 1];
+      
+      // Nếu điểm cuối cùng cách đây quá 5 phút (300,000ms)
+      // có nghĩa là chuyến đi này đã kết thúc, không vẽ trên bản đồ Live nữa
+      if (Date.now() - lastPoint.timestamp > 5 * 60 * 1000) {
+        callback({ waypoints: [], distance: 0, duration: 0 });
+        return;
+      }
+
+      let distanceM = 0;
+      for (let i = 1; i < pts.length; i++) {
+        const dLat = ((pts[i].lat - pts[i-1].lat) * Math.PI) / 180;
+        const dLng = ((pts[i].lng - pts[i-1].lng) * Math.PI) / 180;
+        const a = Math.sin(dLat/2)**2 + Math.cos((pts[i-1].lat*Math.PI)/180) * Math.cos((pts[i].lat*Math.PI)/180) * Math.sin(dLng/2)**2;
+        distanceM += 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      }
+
+      callback({
+        tripId: latestTrip.tripId,
+        waypoints: pts.map(l => [l.lat, l.lng] as [number, number]),
+        distance: Math.round(distanceM),
+        duration: pts[pts.length-1].timestamp - pts[0].timestamp,
+      });
+    } else {
+      // Cấu trúc cũ: history/{date}/{timestamp} (legacy) — đọc thẳng
+      const allLogs: LogPoint[] = [];
+      for (const [tsKey, point] of Object.entries(data as Record<string, any>)) {
+        if (!point) continue;
+        const lat = (point as any).lat ?? (point as any).latitude;
+        const lng = (point as any).lng ?? (point as any).longitude;
+        if (typeof lat === "number" && typeof lng === "number") {
+          allLogs.push({ timestamp: Number(tsKey), lat, lng, speed: (point as any).speed ?? 0 });
         }
       }
       allLogs.sort((a, b) => a.timestamp - b.timestamp);
-      if (allLogs.length > 0) {
-        // Tính khoảng cách thực (Haversine)
-        let distanceM = 0;
-        for (let i = 1; i < allLogs.length; i++) {
-          const p1 = allLogs[i - 1];
-          const p2 = allLogs[i];
-          const dLat = ((p2.lat - p1.lat) * Math.PI) / 180;
-          const dLng = ((p2.lng - p1.lng) * Math.PI) / 180;
-          const a =
-            Math.sin(dLat / 2) ** 2 +
-            Math.cos((p1.lat * Math.PI) / 180) *
-              Math.cos((p2.lat * Math.PI) / 180) *
-              Math.sin(dLng / 2) ** 2;
-          distanceM += 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        }
-        const durationSec =
-          allLogs.length > 1
-            ? allLogs[allLogs.length - 1].timestamp - allLogs[0].timestamp
-            : 0;
-
-        callback({
-          waypoints: allLogs.map((l) => [l.lat, l.lng] as [number, number]),
-          distance: Math.round(distanceM),
-          duration: durationSec,
-        });
+      if (allLogs.length === 0) {
+        callback({ waypoints: [], distance: 0, duration: 0 });
+        return;
       }
+      let distanceM = 0;
+      for (let i = 1; i < allLogs.length; i++) {
+        const dLat = ((allLogs[i].lat - allLogs[i-1].lat) * Math.PI) / 180;
+        const dLng = ((allLogs[i].lng - allLogs[i-1].lng) * Math.PI) / 180;
+        const a = Math.sin(dLat/2)**2 + Math.cos((allLogs[i-1].lat*Math.PI)/180) * Math.cos((allLogs[i].lat*Math.PI)/180) * Math.sin(dLng/2)**2;
+        distanceM += 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      }
+      callback({
+        waypoints: allLogs.map(l => [l.lat, l.lng] as [number, number]),
+        distance: Math.round(distanceM),
+        duration: allLogs[allLogs.length-1].timestamp - allLogs[0].timestamp,
+      });
     }
   });
+
   return () => {
     off(historyRef, "value", listener as any);
   };
 }
+
+/**
+ * Subscribe to completed trip summaries for a device.
+ * Path: tracking_system/devices/{deviceId}/trips/{tripId}
+ */
+export function subscribeTripHistory(
+  deviceId: string,
+  callback: (trips: {
+    tripId: string;
+    startedAt: number;
+    endedAt: number;
+    durationSec: number;
+    distanceM: number;
+    pointCount: number;
+    startLat: number;
+    startLng: number;
+    endLat: number;
+    endLng: number;
+  }[]) => void,
+): () => void {
+  const tripsRef = ref(db, `tracking_system/devices/${deviceId}/trips`);
+  const listener = onValue(tripsRef, (snapshot) => {
+    const data = snapshot.val();
+    if (!data) {
+      callback([]);
+      return;
+    }
+    const trips = Object.entries(data as Record<string, any>)
+      .map(([tripId, val]) => ({ tripId, ...val }))
+      .sort((a, b) => b.startedAt - a.startedAt); // mới nhất trước
+    callback(trips);
+  });
+  return () => {
+    off(tripsRef, "value", listener as any);
+  };
+}
+
 
 /**
  * Subscribe to alerts list.

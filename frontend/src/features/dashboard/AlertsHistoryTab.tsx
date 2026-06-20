@@ -138,29 +138,43 @@ export default function AlertsHistoryTab({
         const dateLogs = data[date];
         if (!dateLogs || typeof dateLogs !== "object") continue;
 
-        for (const tsKey of Object.keys(dateLogs)) {
-          const point = dateLogs[tsKey];
-          if (!point) continue;
+        // Kiểm tra cấu trúc mới (có tripId lồng bên trong)
+        const firstVal = Object.values(dateLogs)[0];
+        const isNewStructure = firstVal && typeof firstVal === "object" &&
+          !("lat" in (firstVal as object)) && !("latitude" in (firstVal as object));
 
-          // Normalize timestamp: 10 chữ số = giây → ms
-          let tsMs = Number(tsKey);
-          if (isNaN(tsMs) || tsMs === 0) continue; // bỏ qua key không hợp lệ
-          if (tsKey.length <= 10) tsMs = tsMs * 1000;
-
-          // Filter theo khoảng thời gian đã chọn
-          if (tsMs < rangeStartMs || tsMs > rangeEndMs) continue;
-
-          const lat = point.lat ?? point.latitude;
-          const lng = point.lng ?? point.longitude;
-          if (typeof lat !== "number" || typeof lng !== "number") continue;
-          if (lat === 0 && lng === 0) continue;
-
-          allLogs.push({
-            timestamp: tsMs,
-            lat,
-            lng,
-            speed: point.speed ?? undefined,
-          });
+        if (isNewStructure) {
+          // Cấu trúc mới: history/{date}/{tripId}/{timestamp}
+          for (const tripData of Object.values(dateLogs) as Record<string, any>[]) {
+            if (!tripData || typeof tripData !== "object") continue;
+            for (const [tsKey, point] of Object.entries(tripData)) {
+              if (!point) continue;
+              let tsMs = Number(tsKey);
+              if (isNaN(tsMs) || tsMs === 0) continue;
+              if (tsKey.length <= 10) tsMs = tsMs * 1000;
+              if (tsMs < rangeStartMs || tsMs > rangeEndMs) continue;
+              const lat = (point as any).lat ?? (point as any).latitude;
+              const lng = (point as any).lng ?? (point as any).longitude;
+              if (typeof lat !== "number" || typeof lng !== "number") continue;
+              if (lat === 0 && lng === 0) continue;
+              allLogs.push({ timestamp: tsMs, lat, lng, speed: (point as any).speed ?? undefined });
+            }
+          }
+        } else {
+          // Cấu trúc cũ: history/{date}/{timestamp}
+          for (const tsKey of Object.keys(dateLogs)) {
+            const point = dateLogs[tsKey];
+            if (!point) continue;
+            let tsMs = Number(tsKey);
+            if (isNaN(tsMs) || tsMs === 0) continue;
+            if (tsKey.length <= 10) tsMs = tsMs * 1000;
+            if (tsMs < rangeStartMs || tsMs > rangeEndMs) continue;
+            const lat = point.lat ?? point.latitude;
+            const lng = point.lng ?? point.longitude;
+            if (typeof lat !== "number" || typeof lng !== "number") continue;
+            if (lat === 0 && lng === 0) continue;
+            allLogs.push({ timestamp: tsMs, lat, lng, speed: point.speed ?? undefined });
+          }
         }
       }
 

@@ -28,17 +28,19 @@ const SENSITIVITY_MAP: Record<number, number> = {
   5: 1.5,
 };
 
-const DEFAULTS: DeviceSettings = {
+type LocalDeviceSettings = DeviceSettings & { accel_threshold?: number };
+
+const DEFAULTS: LocalDeviceSettings = {
   sos_email: "",
-  tilt_threshold: 45,
+  fallAngleThreshold: 45,
   accel_threshold: 2.5,
-  speed_threshold: 80,
-  sensitivity: 3,
+  speedThreshold: 80,
+  impactSensitivity: 3,
 };
 
 export default function SettingsTab() {
   const { user, isAdmin } = useAuth();
-  const [settings, setSettings] = useState<DeviceSettings>(DEFAULTS);
+  const [settings, setSettings] = useState<LocalDeviceSettings>(DEFAULTS);
   const [loading, setLoading] = useState(true);
 
   // ── Admin: full settings save ──────────────────────────────────────────
@@ -79,9 +81,9 @@ export default function SettingsTab() {
   }, [deviceId]);
 
   // ── Admin: update ngưỡng ──────────────────────────────────────────────
-  const updateSetting = <K extends keyof DeviceSettings>(
+  const updateSetting = <K extends keyof LocalDeviceSettings>(
     key: K,
-    value: DeviceSettings[K],
+    value: LocalDeviceSettings[K],
   ) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
     setHasUnsaved(true);
@@ -100,8 +102,8 @@ export default function SettingsTab() {
       window.dispatchEvent(
         new CustomEvent("monimove:settings:changed", {
           detail: {
-            sensitivity: settings.sensitivity,
-            tiltThreshold: settings.tilt_threshold,
+            sensitivity: settings.impactSensitivity,
+            tiltThreshold: settings.fallAngleThreshold,
           },
         }),
       );
@@ -344,20 +346,20 @@ export default function SettingsTab() {
                       Ngưỡng gia tốc va chạm
                     </label>
                     <span className="rounded-lg bg-[#00b494]/10 px-3 py-1 text-[12px] text-[#00b494] font-bold">
-                      Cấp {settings.sensitivity ?? 3} —{" "}
-                      {SENSITIVITY_MAP[settings.sensitivity ?? 3]}G
+                      Cấp {settings.impactSensitivity ?? 3} —{" "}
+                      {SENSITIVITY_MAP[settings.impactSensitivity ?? 3]}G
                     </span>
                   </div>
                   <input
                     type="range"
                     min="1"
                     max="5"
-                    value={settings.sensitivity ?? 3}
+                    value={settings.impactSensitivity ?? 3}
                     onChange={(e) => {
                       const val = Number(e.target.value);
                       setSettings((prev) => ({
                         ...prev,
-                        sensitivity: val,
+                        impactSensitivity: val,
                         accel_threshold: SENSITIVITY_MAP[val],
                       }));
                       setHasUnsaved(true);
@@ -380,7 +382,7 @@ export default function SettingsTab() {
                       Góc nghiêng báo động ngã
                     </label>
                     <span className="rounded-lg bg-purple-50 px-3 py-1 text-[12px] text-purple-700 font-bold border border-purple-100">
-                      {settings.tilt_threshold ?? 45}°
+                      {settings.fallAngleThreshold ?? 45}°
                     </span>
                   </div>
                   <input
@@ -388,9 +390,9 @@ export default function SettingsTab() {
                     min="20"
                     max="90"
                     step="5"
-                    value={settings.tilt_threshold ?? 45}
+                    value={settings.fallAngleThreshold ?? 45}
                     onChange={(e) =>
-                      updateSetting("tilt_threshold", Number(e.target.value))
+                      updateSetting("fallAngleThreshold", Number(e.target.value))
                     }
                     disabled={!isAdmin}
                     className="w-full h-2 bg-slate-200 rounded-lg appearance-none accent-purple-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
@@ -410,7 +412,7 @@ export default function SettingsTab() {
                       Tốc độ cảnh báo
                     </label>
                     <span className="rounded-lg bg-amber-50 px-3 py-1 text-[12px] text-amber-600 font-bold border border-amber-100">
-                      {settings.speed_threshold ?? 80} km/h
+                      {settings.speedThreshold ?? 80} km/h
                     </span>
                   </div>
                   <input
@@ -418,9 +420,9 @@ export default function SettingsTab() {
                     min="30"
                     max="200"
                     step="10"
-                    value={settings.speed_threshold ?? 80}
+                    value={settings.speedThreshold ?? 80}
                     onChange={(e) =>
-                      updateSetting("speed_threshold", Number(e.target.value))
+                      updateSetting("speedThreshold", Number(e.target.value))
                     }
                     disabled={!isAdmin}
                     className="w-full h-2 bg-slate-200 rounded-lg appearance-none accent-amber-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
@@ -437,12 +439,12 @@ export default function SettingsTab() {
                   <p>
                     Cảnh báo khi gia tốc vượt{" "}
                     <strong>
-                      {SENSITIVITY_MAP[settings.sensitivity ?? 3]}G
+                      {SENSITIVITY_MAP[settings.impactSensitivity ?? 3]}G
                     </strong>
                     , nghiêng quá{" "}
-                    <strong>{settings.tilt_threshold ?? 45}°</strong>, hoặc tốc
+                    <strong>{settings.fallAngleThreshold ?? 45}°</strong>, hoặc tốc
                     độ trên{" "}
-                    <strong>{settings.speed_threshold ?? 80} km/h</strong>.
+                    <strong>{settings.speedThreshold ?? 80} km/h</strong>.
                   </p>
                 </div>
               </div>
@@ -459,17 +461,17 @@ export default function SettingsTab() {
                 {[
                   {
                     label: "Va chạm",
-                    value: `> ${SENSITIVITY_MAP[settings.sensitivity ?? 3]}G`,
+                    value: `> ${SENSITIVITY_MAP[settings.impactSensitivity ?? 3]}G`,
                     cls: "text-[#00b494] bg-[#00b494]/10",
                   },
                   {
                     label: "Góc ngã",
-                    value: `> ${settings.tilt_threshold ?? 45}°`,
+                    value: `> ${settings.fallAngleThreshold ?? 45}°`,
                     cls: "text-purple-600 bg-purple-50",
                   },
                   {
                     label: "Tốc độ cao",
-                    value: `> ${settings.speed_threshold ?? 80} km/h`,
+                    value: `> ${settings.speedThreshold ?? 80} km/h`,
                     cls: "text-amber-600 bg-amber-50",
                   },
                 ].map((s) => (
