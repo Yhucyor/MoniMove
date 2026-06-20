@@ -628,17 +628,7 @@ export default function MapComponent({
         )}
       </MapContainer>
 
-      {/* Loading overlay */}
-      {(isLoadingRoute || isLoadingUserRoute) && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[2000] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-slate-700 font-semibold">
-              Đang tính toán đường đi...
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Removed Loading overlay so calculation runs silently in background */}
 
       {/* Map style toggle */}
       <div
