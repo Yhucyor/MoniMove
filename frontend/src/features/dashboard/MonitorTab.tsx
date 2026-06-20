@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Menu, Route } from "lucide-react";
+import { Menu, Route, Shield } from "lucide-react";
 import AlertsOverlay from "./AlertsOverlay";
 import { useAlertProcessor } from "../../hooks/useAlertProcessor";
 import { useMyDevices } from "../../hooks/useMyDevices";
