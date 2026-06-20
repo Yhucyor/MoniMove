@@ -119,11 +119,17 @@ export function useRealtimeDashboard(deviceId: string | null) {
   );
 
   const handleAlert = useCallback((alert: WsAlertEvent) => {
-    setAlerts((prev) => [alert, ...prev].slice(0, 10));
-    setMetrics((prev) => ({
-      ...prev,
-      lastAlerts: [alert, ...prev.lastAlerts].slice(0, 10),
-    }));
+    setAlerts((prev) => {
+      if (prev.some(a => a.id === alert.id)) return prev;
+      return [alert, ...prev].slice(0, 10);
+    });
+    setMetrics((prev) => {
+      if (prev.lastAlerts.some(a => a.id === alert.id)) return prev;
+      return {
+        ...prev,
+        lastAlerts: [alert, ...prev.lastAlerts].slice(0, 10),
+      };
+    });
   }, []);
 
   // WebSocket connection
