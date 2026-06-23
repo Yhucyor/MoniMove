@@ -23,7 +23,7 @@ export class AppController {
     };
   }
 
-  @Get("api/health")
+  @Get("health")
   @ApiOperation({ summary: "Detailed health + realtime stats" })
   getDetailedHealth() {
     return {

@@ -103,24 +103,33 @@ export class FirebaseService implements OnModuleInit {
 
       if (userDoc.exists) {
         const userData = userDoc.data();
-        const role = userData?.role || "user";
+        let role = userData?.role || "user";
+        
+        // Auto-promote owner email to admin if not already
+        if (email === process.env.SMTP_USER && role !== "admin") {
+          role = "admin";
+          await userRef.update({ role: "admin" });
+          this.logger.log(`[DB] Đã tự động cấp quyền ADMIN cho tài khoản chủ: ${email}`);
+        }
+
         this.logger.log(
           `[DB] Người dùng cũ đăng nhập: ${email}. Quyền: ${role.toUpperCase()}`,
         );
         return role;
       } else {
         // Tài khoản MỚI — tự động tạo với deviceIds rỗng
+        const role = email === process.env.SMTP_USER ? "admin" : "user";
         const newUserData = {
           email,
           name,
           avatar,
-          role: "user",
+          role,
           deviceIds: [] as string[],
           createdAt: new Date().toISOString(),
         };
         await userRef.set(newUserData);
-        this.logger.log(`[DB] Tạo bản ghi mới cho: ${email} — role: USER`);
-        return "user";
+        this.logger.log(`[DB] Tạo bản ghi mới cho: ${email} — role: ${role.toUpperCase()}`);
+        return role;
       }
     } catch (error) {
       this.logger.error(`Lỗi truy xuất User Firestore [${email}]:`, error);
