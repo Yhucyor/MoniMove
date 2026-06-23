@@ -24,13 +24,27 @@ export class FirebaseService implements OnModuleInit {
       try {
         let credential;
         
-        // Check if service account is provided via environment variable
-        if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+        // Priority 1: Render Secret File (recommended for production)
+        if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
+          const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+          this.logger.log(`Using service account from secret file: ${serviceAccountPath}`);
+          credential = admin.credential.cert(serviceAccountPath);
+        }
+        // Priority 2: Base64 encoded (fallback for Render)
+        else if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
+          this.logger.log("Found FIREBASE_SERVICE_ACCOUNT_BASE64. Decoding...");
+          const jsonString = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64').toString('utf8');
+          const serviceAccount = JSON.parse(jsonString);
+          credential = admin.credential.cert(serviceAccount);
+        }
+        // Priority 3: JSON string (original method)
+        else if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
           this.logger.log("Found FIREBASE_SERVICE_ACCOUNT_JSON in environment variables. Parsing...");
           const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
           credential = admin.credential.cert(serviceAccount);
-        } else {
-          // Fall back to local file
+        }
+        // Priority 4: Local file (development)
+        else {
           const serviceAccountPath = path.resolve(
             __dirname,
             "..",
