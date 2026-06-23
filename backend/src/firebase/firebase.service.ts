@@ -22,23 +22,34 @@ export class FirebaseService implements OnModuleInit {
       this.logger.log("Initializing Firebase Admin SDK with credentials...");
 
       try {
-        // Ưu tiên sử dụng service account file nếu có
-        const serviceAccountPath = path.resolve(
-          __dirname,
-          "..",
-          "config",
-          "firebase-service-account.json",
-        );
+        let credential;
+        
+        // Check if service account is provided via environment variable
+        if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+          this.logger.log("Found FIREBASE_SERVICE_ACCOUNT_JSON in environment variables. Parsing...");
+          const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+          credential = admin.credential.cert(serviceAccount);
+        } else {
+          // Fall back to local file
+          const serviceAccountPath = path.resolve(
+            __dirname,
+            "..",
+            "config",
+            "firebase-service-account.json",
+          );
+          this.logger.log(`Using local service account file at: ${serviceAccountPath}`);
+          credential = admin.credential.cert(serviceAccountPath);
+        }
 
         admin.initializeApp({
-          credential: admin.credential.cert(serviceAccountPath),
+          credential,
           databaseURL:
             process.env.FIREBASE_DATABASE_URL ||
             "https://monitoring-d6063-default-rtdb.firebaseio.com",
         });
 
         this.logger.log(
-          "✅ Firebase Admin SDK initialized successfully with service account file",
+          "✅ Firebase Admin SDK initialized successfully",
         );
       } catch (error) {
         this.logger.error("❌ Failed to initialize Firebase Admin SDK:", error);
